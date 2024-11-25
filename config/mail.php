@@ -1,1 +1,0 @@
-<?php // Mail Configuration
