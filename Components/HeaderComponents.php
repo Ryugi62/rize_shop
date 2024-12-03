@@ -4,7 +4,7 @@
 
         <!-- 메인, 상품, 게시판, 관리자페이지(관리자만 표출) 하는 class name -->
         <ul class="header_menu">
-            <li class="main_menu"><a href="/">메인</a></li>
+            <li class="index_menu"><a href="/">메인</a></li>
             <li class="product_menu"><a href="/product.php">상품</a></li>
             <li class="board_menu"><a href="/board.php">게시판</a></li>
             <li class="admin_menu"><a href="/admin.php">관리자페이지</a></li>
@@ -20,7 +20,7 @@
 
 <script>
     // 현재 페이지의 경로를 가져옵니다.
-    const path = window.location.pathname;
+    const path = window.location.pathname === "/" ? "/index.php" : window.location.pathname;
 
     // 쿼리 파라미터를 제거하고, 파일 이름만 추출
     const page = path.split("/").pop().split("?")[0]; // /product.php?id=1 => product.php
@@ -31,9 +31,6 @@
     // active 메뉴가 있으면 클래스를 추가하고, 없으면 기본 메뉴(메인)에 active 클래스를 추가합니다.
     if (active_menu) {
         active_menu.querySelector("a").classList.add("active");
-    } else {
-        // 기본 메뉴를 활성화
-        document.querySelector(".main_menu a").classList.add("active");
     }
 </script>
 
