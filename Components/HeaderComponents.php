@@ -36,6 +36,11 @@
 
 <style>
     .header_component {
+        top: 0;
+        z-index: 1000;
+        position: sticky;
+        background-color: var(--black);
+
         /* 컴포넌트의 디자인 */
         border-bottom: 1px solid var(--light-gray);
 
