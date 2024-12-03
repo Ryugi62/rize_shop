@@ -35,14 +35,19 @@
                 margin-top: 40px;
             }
 
-            .section_title {
+            .section_header {
                 width: 100%;
-                text-align: left;
+                display: flex;
+                align-items: center;
+                border-bottom: 1px solid var(--light-gray);
+                margin-bottom: 16px;
+                padding-bottom: 8px;
+                justify-content: space-between;
+            }
+
+            .section_title {
                 font-size: 24px;
                 font-weight: bold;
-                margin-bottom: 16px;
-                border-bottom: 1px solid var(--light-gray);
-                padding-bottom: 8px;
             }
 
             .ranking_product_list {
@@ -56,17 +61,22 @@
 </head>
 
 <body>
-    <?php include("./Components/HeaderComponents.php") ?>
+    <?php include("./Components/LoadingComponents.php"); ?>
+
+    <?php include("./Components/HeaderComponents.php"); ?>
 
     <main>
         <div class="product_view">
             <div class="ranking_section">
-                <h2 class="section_title">랭킹 상품</h2>
+                <div class="section_header">
+                    <h2 class="section_title">상품 리스트</h2>
+                    <?php include("./Components/SearchComponents.php"); ?>
+                </div>
 
                 <!-- 상품 리스트를 동적으로 생성 -->
                 <div class="ranking_product_list">
                     <?php
-                    // 예시 상품 데이터 배열 using array()
+                    // 예시 상품 데이터 배열
                     $products = array(
                         array(
                             'image' => './assets/images/hoodie1.png',
@@ -80,19 +90,10 @@
                         ),
                         array(
                             'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
                         ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
-                        ),
+                        // 추가 상품 데이터...
                     );
                     $mode = "view";
 
@@ -105,10 +106,6 @@
             </div>
         </div>
     </main>
-
-    <script>
-        // 현재 JavaScript는 필요하지 않으므로 비워두었습니다.
-    </script>
 </body>
 
 </html>

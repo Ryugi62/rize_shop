@@ -20,7 +20,7 @@ if (isset($product)) {
 }
 ?>
 
-<div class="product_component">
+<div class="product_component product">
     <img src="<?php echo $image; ?>" alt="<?php echo $name; ?> 이미지" class="product_image">
     <h3 class="product_name"><?php echo $name; ?></h3>
     <p class="product_price"><?php echo $price; ?></p>
