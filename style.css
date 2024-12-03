@@ -50,6 +50,12 @@ ul {
   list-style-type: none;
 }
 
+input {
+  border: 0;
+  background-color: var(--black);
+  color: var(--white);
+}
+
 html,
 body {
   width: 100%;
