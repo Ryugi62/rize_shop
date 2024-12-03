@@ -10,6 +10,10 @@
   --black-hover: #333333;
   --black-active: #666666;
 
+  --light-black: #202020;
+  --light-black-hover: #404040;
+  --light-black-active: #606060;
+
   --gray: #808080;
   --gray-hover: #a0a0a0;
   --gray-active: #c0c0c0;
@@ -56,6 +60,22 @@ input {
   color: var(--white);
 }
 
+
+p {
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  padding: 0;
+}
+
 html,
 body {
   width: 100%;
@@ -66,7 +86,4 @@ body {
   outline: 0;
 
   background-color: var(--black);
-}
-
-main {
 }
