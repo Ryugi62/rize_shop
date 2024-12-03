@@ -1,4 +1,4 @@
-<header class="headerComponent">
+<header class="header_component">
     <div class="header_viewer">
         <a href="/" class="logo">RIZE</a>
 
@@ -35,7 +35,7 @@
 </script>
 
 <style>
-    .headerComponent {
+    .header_component {
         /* 컴포넌트의 디자인 */
         border-bottom: 1px solid var(--light-gray);
 
