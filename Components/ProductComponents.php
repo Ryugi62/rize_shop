@@ -1,5 +1,12 @@
 <!-- Components/ProductComponents.php -->
 <?php
+// $mode라는 변수가 선언되었는지 확인
+if (isset($mode)) {
+    $mode = $mode;
+} else {
+    $mode = "";
+}
+
 // 상품 정보가 배열로 전달되었는지 확인
 if (isset($product)) {
     $image = htmlspecialchars($product['image']);
@@ -19,12 +26,6 @@ if (isset($product)) {
     <p class="product_price"><?php echo $price; ?></p>
     <?php
     if ($mode === "view") {
-        // <div class="product_button">
-        //     <button class="product_like_button">찜하기</button>
-        //     <button class="product_cart_button">장바구니</button>
-        // </div>
-        // <button class="product_buy_button">구매하기</button>
-
         echo '<div class="product_button">';
         echo '<button class="product_like_button">찜하기</button>';
         echo '<button class="product_cart_button">장바구니</button>';
