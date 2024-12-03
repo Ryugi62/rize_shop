@@ -125,9 +125,12 @@
         </div>
     </main>
 
-    <script>
-        // 현재 JavaScript는 필요하지 않으므로 비워두었습니다.
-    </script>
+    <?php include("./Components/FooterComponents.php") ?>
 </body>
 
 </html>
+
+
+<script>
+    // 현재 JavaScript는 필요하지 않으므로 비워두었습니다.
+</script>
