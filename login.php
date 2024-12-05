@@ -25,8 +25,8 @@
                 height: 100%;
                 display: flex;
                 align-items: center;
-                justify-content: center;
                 padding-right: 150px;
+                justify-content: center;
             }
 
             .form-group {
@@ -36,12 +36,9 @@
             }
 
             input {
-                color: var(--black);
-                border: 1px solid var(--light-gray);
-                padding: 0.5rem;
-                border-radius: 0.5rem;
-                background-color: var(--light-gray);
                 width: 300px;
+                color: var(--black);
+                background-color: var(--light-gray);
             }
         }
     </style>
