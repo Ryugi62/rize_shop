@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 
 <head>
     <meta charset="UTF-8">
@@ -10,14 +10,22 @@
     <link rel="stylesheet" href="./style.css">
 
     <style>
-        main {
-            flex: 1;
+        .login_view {
 
             * {
                 /* border: 1px solid red; */
             }
 
+            h2 {
+                font-size: 2rem;
+                color: var(--white);
+                margin-bottom: 1.5rem;
+                text-align: center;
+            }
+
             form {
+                display: flex;
+                flex-direction: column;
                 height: 100%;
                 display: flex;
                 align-items: center;
@@ -46,7 +54,10 @@
     <main>
         <div class="login_view view">
 
+
             <form action="/api/login.php" method="POST">
+                <h2>로그인</h2>
+
                 <div class="form-group">
                     <label for="ID">아이디</label>
                     <input type="text" name="ID" id="ID" required>
@@ -58,7 +69,7 @@
 
                     <a href="register.php">Register</a>
 
-                    <a href="forgot-password.php">Forgot Password</a>
+                    <a href="forgotPassword.php">Forgot Password</a>
                 </div>
             </form>
 

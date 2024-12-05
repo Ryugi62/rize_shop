@@ -14,7 +14,7 @@
     <?php include("./Components/HeaderComponents.php") ?>
 
     <main>
-        <div class="admin_view view"></div>
+        <div class="register_view view"></div>
     </main>
 
     <?php include("./Components/FooterComponents.php") ?>

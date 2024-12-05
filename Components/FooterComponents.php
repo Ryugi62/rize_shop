@@ -27,7 +27,7 @@
 
 <style>
     .footer_component {
-        margin-top: 16px;
+        margin-top: 32px;
         background-color: var(--light-black);
         color: var(--white);
         font-family: Arial, sans-serif;
