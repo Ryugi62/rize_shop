@@ -19,7 +19,7 @@
             h2 {
                 font-size: 2rem;
                 color: var(--white);
-                margin-bottom: 1.5rem;
+                margin-bottom: 3rem;
                 text-align: center;
             }
 
