@@ -49,7 +49,7 @@ if (isset($product)) {
         .product_image {
             height: 200px;
             border-radius: 8px;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .product_name {

@@ -93,6 +93,31 @@
                             'name' => '후디3',
                             'price' => '₩70,000',
                         ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩70,000',
+                        ),
                         // 추가 상품 데이터...
                     );
                     $mode = "view";
@@ -106,6 +131,8 @@
             </div>
         </div>
     </main>
+
+    <?php include("./Components/FooterComponents.php"); ?>
 </body>
 
 </html>

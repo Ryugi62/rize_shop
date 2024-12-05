@@ -12,6 +12,8 @@
 
 <body>
     <?php include("./Components/HeaderComponents.php") ?>
+
+    <?php include("./Components/FooterComponents.php") ?>
 </body>
 
 </html>
