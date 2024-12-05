@@ -2,7 +2,7 @@
     <div class="footer_viewer">
         <div class="footer_top">
             <div class="footer_logo">
-                <h2>RIZE</h2>
+                <h2>RIZZ</h2>
                 <p>Rise to Your Style</p>
             </div>
             <div class="footer_links">
@@ -18,9 +18,9 @@
             </div>
         </div>
         <div class="footer_bottom">
-            <p>© 2024 RIZE. All rights reserved.</p>
+            <p>© 2024 RIZZ. All rights reserved.</p>
             <p>대표: 홍길동 | 사업자등록번호: 123-45-67890 | 통신판매업 신고번호: 제2024-창원-0001호</p>
-            <p>주소: 경상남도 창원시 대학로 123번길 45 | 고객센터: 080-123-4567 | 이메일: support@rize.com</p>
+            <p>주소: 경상남도 창원시 대학로 123번길 45 | 고객센터: 080-123-4567 | 이메일: support@rizz.com</p>
         </div>
     </div>
 </footer>

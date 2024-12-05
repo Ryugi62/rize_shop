@@ -1,6 +1,6 @@
 <header class="header_component">
     <div class="header_viewer">
-        <a href="/" class="logo">RIZE</a>
+        <a href="/" class="logo">RIZZ</a>
 
         <!-- 메인, 상품, 게시판, 관리자페이지(관리자만 표출) 하는 class name -->
         <ul class="header_menu">

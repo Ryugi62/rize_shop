@@ -1,1 +1,1 @@
-# rize_shop
+# rizz_shop
