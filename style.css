@@ -103,6 +103,17 @@ main {
   flex: 1;
 }
 
+.view {
+  height: 100%;
+  display: flex;
+  margin: 0 auto;
+  padding: 0 16px;
+  max-width: 1200px;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+}
+
 button {
   color: #fff;
   cursor: pointer;

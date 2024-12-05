@@ -15,17 +15,6 @@
         main {
             position: relative;
 
-
-            .product_view {
-                display: flex;
-                max-width: 1200px;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-                margin: 0 auto;
-                padding: 0 16px;
-            }
-
             .ranking_section {
                 width: 100%;
                 display: flex;
@@ -66,7 +55,7 @@
     <?php include("./Components/HeaderComponents.php"); ?>
 
     <main>
-        <div class="product_view">
+        <div class="product_view view">
             <div class="ranking_section">
                 <div class="section_header">
                     <h2 class="section_title">상품 리스트</h2>

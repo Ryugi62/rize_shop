@@ -13,7 +13,9 @@
 <body>
     <?php include("./Components/HeaderComponents.php") ?>
 
-    <main></main>
+    <main>
+        <div class="register_view view"></div>
+    </main>
 
     <?php include("./Components/FooterComponents.php") ?>
 </body>

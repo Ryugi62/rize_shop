@@ -17,10 +17,6 @@
                 /* border: 1px solid red; */
             }
 
-            .login_view {
-                height: 100%;
-            }
-
             form {
                 height: 100%;
                 display: flex;
@@ -48,7 +44,7 @@
     <?php include("./Components/HeaderComponents.php") ?>
 
     <main>
-        <div class="login_view">
+        <div class="login_view view">
 
             <form action="/api/login.php" method="POST">
                 <div class="form-group">

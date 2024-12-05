@@ -15,17 +15,6 @@
         main {
             position: relative;
 
-
-            .index_view {
-                display: flex;
-                max-width: 1200px;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-                margin: 0 auto;
-                padding: 0 16px;
-            }
-
             .video_box {
                 width: 100%;
                 height: auto;
@@ -73,7 +62,7 @@
     <?php include("./Components/HeaderComponents.php") ?>
 
     <main>
-        <div class="index_view">
+        <div class="index_view view">
             <div class="video_box">
                 <video src="./assets/video/main_video.mp4" poster="./assets/images/main_video_poster.png" autoplay loop muted>
                     영상을 불러올 수 없습니다.
