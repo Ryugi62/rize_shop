@@ -8,10 +8,29 @@
 
     <!-- import style -->
     <link rel="stylesheet" href="./style.css">
+
+    <style>
+        main {
+            flex: 1;
+
+            * {
+                border: 1px solid red;
+            }
+
+            .login_view {
+                height: 100%;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <?php include("./Components/HeaderComponents.php") ?>
+
+    <main>
+        <div class="login_view">
+        </div>
+    </main>
 
     <?php include("./Components/FooterComponents.php") ?>
 </body>

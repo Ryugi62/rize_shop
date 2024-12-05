@@ -13,6 +13,8 @@
 <body>
     <?php include("./Components/HeaderComponents.php") ?>
 
+    <main></main>
+
     <?php include("./Components/FooterComponents.php") ?>
 </body>
 

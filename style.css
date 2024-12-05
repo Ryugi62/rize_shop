@@ -86,4 +86,11 @@ body {
   outline: 0;
 
   background-color: var(--black);
+
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
 }
