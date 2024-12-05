@@ -30,7 +30,7 @@ if (isset($product)) {
         echo '<button class="product_like_button">찜하기</button>';
         echo '<button class="product_cart_button">장바구니</button>';
         echo '</div>';
-        echo '<button class="product_buy_button">구매하기</button>';
+        echo '<button class="product_buy_button white_button">구매하기</button>';
     }
     ?>
 
@@ -73,38 +73,11 @@ if (isset($product)) {
         .product_cart_button,
         .product_buy_button {
             width: 48%;
-            padding: 8px;
-            border: 1px solid var(--light-gray);
-            border-radius: 8px;
-            background-color: var(--black);
-            color: var(--white);
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .product_like_button:hover,
-        .product_cart_button:hover {
-            background-color: var(--black-hover);
-        }
-
-        .product_like_button:active,
-        .product_cart_button:active {
-            background-color: var(--black-active);
         }
 
         .product_buy_button {
-            color: var(--black);
-            background-color: var(--white);
             width: 100%;
             margin-top: 16px;
-        }
-
-        .product_buy_button:hover {
-            background-color: var(--white-hover);
-        }
-
-        .product_buy_button:active {
-            background-color: var(--white-active);
         }
     }
 </style>

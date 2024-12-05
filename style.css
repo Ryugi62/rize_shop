@@ -48,6 +48,11 @@ a {
   text-decoration: unset;
 }
 
+a:hover {
+  color: unset;
+  text-decoration: underline;
+}
+
 ul {
   margin: 0;
   padding: 0;
@@ -93,4 +98,34 @@ body {
 
 main {
   flex: 1;
+}
+
+button {
+  color: #fff;
+  cursor: pointer;
+  border: 1px solid var(--light-gray);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--black);
+}
+
+button:hover {
+  background-color: var(--black-hover);
+}
+
+button:active {
+  background-color: var(--black-active);
+}
+
+.white_button {
+  color: var(--black);
+  background-color: var(--white);
+}
+
+.white_button:hover {
+  background-color: var(--white-hover);
+}
+
+.white_button:active {
+  background-color: var(--white-active);
 }
