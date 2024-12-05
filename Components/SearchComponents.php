@@ -79,31 +79,12 @@
         .search_input {
             width: 200px;
             height: 40px;
-            border: 1px solid var(--light-gray);
-            border-radius: 4px;
-            padding: 0 8px;
-            font-size: 16px;
         }
 
         .search_button {
-            border: 1px solid var(--light-gray);
             width: 80px;
             height: 40px;
-            background-color: var(--black);
-            color: white;
-            border-radius: 4px;
             margin-left: 8px;
-            cursor: pointer;
-        }
-
-        .search_button:hover {
-            border-color: var(--light-gray-hover);
-            background-color: var(--black-hover);
-        }
-
-        .search_button:active {
-            border-color: var(--light-gray-active);
-            background-color: var(--black-active);
         }
     }
 </style>
