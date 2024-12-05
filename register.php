@@ -70,11 +70,6 @@
             border-radius: 8px;
         }
 
-        button[type="submit"] {
-            width: 100%;
-            max-width: 400px;
-        }
-
         form {
             display: flex;
             flex-direction: column;
@@ -94,6 +89,12 @@
         input[type="checkbox"] {
             width: 1rem;
             height: 1rem;
+        }
+
+
+        button[type="submit"] {
+            width: 100%;
+            max-width: 400px;
         }
     </style>
 </head>
@@ -157,7 +158,7 @@
                     <label for="interest3">액세서리</label>
                 </div>
                 <div class="form-group">
-                    <button type="submit">회원가입</button>
+                    <button type="submit" class="white_button">회원가입</button>
                     <button type="reset">초기화</button>
                 </div>
             </form>
