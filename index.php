@@ -51,7 +51,7 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 16px;
-                margin-top: 40px;
+                margin: 40px 0;
             }
 
             .section_title {
@@ -107,6 +107,16 @@
                             'image' => './assets/images/hoodie1.png',
                             'name' => '후디2',
                             'price' => '₩60,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩55,000',
+                        ),
+                        array(
+                            'image' => './assets/images/hoodie1.png',
+                            'name' => '후디3',
+                            'price' => '₩55,000',
                         ),
                         array(
                             'image' => './assets/images/hoodie1.png',
