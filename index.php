@@ -29,6 +29,22 @@
                 object-fit: cover;
             }
 
+            .slogan_section {
+                padding: 8vh 0;
+                width: 100%;
+                text-align: center;
+                margin-top: 40px;
+                font-family: 'Arial', sans-serif;
+            }
+
+            .slogan_section p {
+                margin: 0;
+                font-size: 34px;
+                font-weight: bold;
+                white-space: pre-wrap;
+                /* 줄 바꿈 유지 */
+            }
+
             .ranking_section {
                 width: 100%;
                 display: flex;
@@ -69,6 +85,11 @@
                 </video>
             </div>
 
+            <!-- 슬로건 애니메이션 섹션 -->
+            <div class="slogan_section">
+                <p id="slogan"></p>
+            </div>
+
             <div class="ranking_section">
                 <h2 class="section_title">랭킹 상품</h2>
 
@@ -89,18 +110,8 @@
                         ),
                         array(
                             'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
+                            'name' => '후디3',
+                            'price' => '₩55,000',
                         ),
                     );
 
@@ -111,15 +122,43 @@
                     ?>
                 </div>
             </div>
+
         </div>
     </main>
 
     <?php include("./Components/FooterComponents.php") ?>
 </body>
 
-</html>
-
-
 <script>
-    // 현재 JavaScript는 필요하지 않으므로 비워두었습니다.
+    const sloganText = ['"a unique hoodie, and,', 'with me in it."']; // 슬로건 문구
+    const typingSpeed = 100; // 타이핑 속도 (ms)
+    const delayBetweenLines = 1000; // 줄 간 간격 (ms)
+    const sloganElement = document.getElementById('slogan');
+
+    let currentLine = 0;
+    let currentChar = 0;
+
+    function typeNextCharacter() {
+        if (currentChar < sloganText[currentLine].length) {
+            // 현재 줄에 다음 글자 추가
+            sloganElement.textContent += sloganText[currentLine][currentChar];
+            currentChar++;
+            setTimeout(typeNextCharacter, typingSpeed);
+        } else {
+            // 한 줄을 다 쓴 후 다음 줄로 넘어가기
+            if (currentLine < sloganText.length - 1) {
+                currentLine++;
+                currentChar = 0;
+                setTimeout(() => {
+                    sloganElement.textContent += '\n'; // 줄 바꿈
+                    typeNextCharacter();
+                }, delayBetweenLines);
+            }
+        }
+    }
+
+    // 애니메이션 시작
+    typeNextCharacter();
 </script>
+
+</html>
