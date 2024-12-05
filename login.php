@@ -43,15 +43,6 @@
                 background-color: var(--light-gray);
                 width: 300px;
             }
-
-            button {
-                color: #fff;
-                cursor: pointer;
-                border: 1px solid var(--light-gray);
-                padding: 0.5rem;
-                border-radius: 0.5rem;
-                background-color: var(--black);
-            }
         }
     </style>
 </head>
