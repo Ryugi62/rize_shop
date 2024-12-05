@@ -38,11 +38,11 @@
             }
 
             .slogan_section p {
+                height: 100px;
                 margin: 0;
                 font-size: 34px;
                 font-weight: bold;
                 white-space: pre-wrap;
-                /* 줄 바꿈 유지 */
             }
 
             .ranking_section {
