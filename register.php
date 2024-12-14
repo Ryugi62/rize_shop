@@ -10,14 +10,18 @@
     <link rel="stylesheet" href="./style.css">
 
     <style>
-        h2 {
-            color: var(--white);
-            font-size: 2rem;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
+        .register_view {
+            height: 900px;
+            align-items: center;
+            justify-content: center;
 
-        .register_view {}
+            h2 {
+                color: var(--white);
+                font-size: 2rem;
+                text-align: center;
+                margin-bottom: 1.5rem;
+            }
+        }
 
         /* form-group 스타일 조정 */
         .form-group {
