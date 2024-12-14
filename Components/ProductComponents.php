@@ -39,10 +39,11 @@ if (isset($product)) {
 
 <style>
     .product_component {
-        padding: 16px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
         display: flex;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
         flex-direction: column;
         justify-content: space-between;
 
@@ -79,5 +80,10 @@ if (isset($product)) {
             width: 100%;
             margin-top: 16px;
         }
+    }
+
+    .product_component:hover {
+        /* border을 밖이 아닌 안에서 생성 */
+        box-shadow: inset 0 0 0 1px var(--main);
     }
 </style>
