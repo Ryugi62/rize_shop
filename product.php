@@ -42,6 +42,7 @@
             .ranking_product_list {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                justify-items: flex-start;
                 gap: 16px;
                 width: 100%;
             }
