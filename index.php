@@ -1,4 +1,3 @@
-<!-- index.php -->
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -11,65 +10,80 @@
     <link rel="stylesheet" href="./style.css">
 
     <style>
-        /* 메인 컨텐츠 */
         main {
             position: relative;
+        }
 
-            .video_box {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
+        .video_banner {
+            position: relative;
+            width: 100%;
+            height: 900px;
+            overflow: hidden;
+        }
 
-            .video_box video {
-                display: block;
-                margin: 0 auto;
-                width: 100%;
-                height: 650px;
-                object-fit: cover;
-            }
+        .video_banner video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
 
-            .slogan_section {
-                padding: 8vh 0;
-                width: 100%;
-                text-align: center;
-                margin-top: 40px;
-                font-family: 'Arial', sans-serif;
-            }
+        .video_banner .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+            z-index: 1;
+            font-size: 3rem;
+        }
 
-            .slogan_section p {
-                height: 100px;
-                margin: 0;
-                font-size: 34px;
-                font-weight: bold;
-                white-space: pre-wrap;
-            }
+        #slogan {
+            white-space: pre;
+            text-align: center;
+            font-size: 3rem;
+        }
 
-            .ranking_section {
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 16px;
-                margin: 40px 0;
-            }
+        .index_view {
+            height: auto;
+        }
 
-            .section_title {
-                width: 100%;
-                text-align: left;
-                font-size: 24px;
-                font-weight: bold;
-                margin-bottom: 16px;
-                border-bottom: 1px solid var(--light-gray);
-                padding-bottom: 8px;
-            }
+        .ranking_section {
+            gap: 16px;
+            width: 100%;
+            display: flex;
+            margin: 40px 0;
+            align-items: center;
+            flex-direction: column;
+        }
 
-            .ranking_product_list {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-                width: 100%;
-            }
+        .section_title {
+            width: 100%;
+            text-align: left;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--light-gray);
+            padding-bottom: 8px;
+        }
+
+        .product_list {
+            display: grid;
+            gap: 16px;
+            width: 100%;
+            justify-items: center;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         }
     </style>
 </head>
@@ -78,61 +92,37 @@
     <?php include("./Components/HeaderComponents.php") ?>
 
     <main>
+        <!-- 비디오 배너 -->
+        <div class="video_banner">
+            <video src="./assets/video/main_video.mp4" autoplay loop muted></video>
+            <div class="overlay">
+                <div class="slogan_section">
+                    <p id="slogan"></p>
+                </div>
+            </div>
+        </div>
+
         <div class="index_view view">
-            <div class="video_box">
-                <video src="./assets/video/main_video.mp4" poster="./assets/images/main_video_poster.png" autoplay loop muted>
-                    영상을 불러올 수 없습니다.
-                </video>
-            </div>
-
-            <!-- 슬로건 애니메이션 섹션 -->
-            <div class="slogan_section">
-                <p id="slogan"></p>
-            </div>
-
+            <!-- 랭킹 상품 섹션 -->
             <div class="ranking_section">
                 <h2 class="section_title">랭킹 상품</h2>
-
-                <!-- 상품 리스트를 동적으로 생성 -->
-                <div class="ranking_product_list">
+                <div class="product_list">
                     <?php
-                    // 예시 상품 데이터 배열 using array()
-                    $products = array(
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디1',
-                            'price' => '₩50,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디2',
-                            'price' => '₩60,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디3',
-                            'price' => '₩55,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디3',
-                            'price' => '₩55,000',
-                        ),
-                        array(
-                            'image' => './assets/images/hoodie1.png',
-                            'name' => '후디3',
-                            'price' => '₩55,000',
-                        ),
+                    $ranking_products = array(
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디1', 'price' => '₩50,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디2', 'price' => '₩60,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디3', 'price' => '₩55,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디4', 'price' => '₩70,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디5', 'price' => '₩80,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디6', 'price' => '₩90,000'),
                     );
 
-                    // 상품 데이터를 동적으로 렌더링
-                    foreach ($products as $product) {
+                    foreach ($ranking_products as $product) {
                         include("./Components/ProductComponents.php");
                     }
                     ?>
                 </div>
             </div>
-
         </div>
     </main>
 
@@ -140,9 +130,9 @@
 </body>
 
 <script>
-    const sloganText = ['"a unique hoodie, and,', 'with me in it."']; // 슬로건 문구
-    const typingSpeed = 100; // 타이핑 속도 (ms)
-    const delayBetweenLines = 1000; // 줄 간 간격 (ms)
+    const sloganText = ['"a unique hoodie, and,', 'with me in it."'];
+    const typingSpeed = 100;
+    const delayBetweenLines = 1000;
     const sloganElement = document.getElementById('slogan');
 
     let currentLine = 0;
@@ -150,24 +140,21 @@
 
     function typeNextCharacter() {
         if (currentChar < sloganText[currentLine].length) {
-            // 현재 줄에 다음 글자 추가
             sloganElement.textContent += sloganText[currentLine][currentChar];
             currentChar++;
             setTimeout(typeNextCharacter, typingSpeed);
         } else {
-            // 한 줄을 다 쓴 후 다음 줄로 넘어가기
             if (currentLine < sloganText.length - 1) {
                 currentLine++;
                 currentChar = 0;
                 setTimeout(() => {
-                    sloganElement.textContent += '\n'; // 줄 바꿈
+                    sloganElement.textContent += '\n';
                     typeNextCharacter();
                 }, delayBetweenLines);
             }
         }
     }
 
-    // 애니메이션 시작
     typeNextCharacter();
 </script>
 
