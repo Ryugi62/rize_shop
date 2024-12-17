@@ -172,4 +172,29 @@
     <?php include("./Components/FooterComponents.php") ?>
 </body>
 
+<script>
+    function checkUsername() {
+        const username = document.getElementById("username").value;
+
+        if (!username) {
+            alert("아이디를 입력하세요.");
+            return;
+        }
+
+        fetch('/api/check_username.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `username=${username}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => console.error("에러 발생:", error));
+    }
+</script>
+
+
 </html>
