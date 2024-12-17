@@ -1,3 +1,9 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -12,8 +18,6 @@
             position: relative;
             width: 100%;
             height: 300px;
-            background-image: url('./assets/images/mypage_banner.jpg');
-            /* 배너 이미지 경로 */
             background-size: cover;
             background-position: center;
             display: flex;
@@ -357,10 +361,10 @@
                     // 예시 데이터 - 실제 구현 시 데이터베이스에서 불러와야 함
                     $orders = array(
                         array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품1', 'price' => '₩50,000', 'date' => '2024-11-20'),
-                        array('image' => './assets/images/hoodie2.png', 'name' => '주문 상품2', 'price' => '₩60,000', 'date' => '2024-10-15'),
-                        array('image' => './assets/images/hoodie3.png', 'name' => '주문 상품3', 'price' => '₩55,000', 'date' => '2024-09-10'),
-                        array('image' => './assets/images/hoodie4.png', 'name' => '주문 상품4', 'price' => '₩70,000', 'date' => '2024-08-05'),
-                        array('image' => './assets/images/hoodie5.png', 'name' => '주문 상품5', 'price' => '₩80,000', 'date' => '2024-07-22'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품2', 'price' => '₩60,000', 'date' => '2024-10-15'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품3', 'price' => '₩55,000', 'date' => '2024-09-10'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품4', 'price' => '₩70,000', 'date' => '2024-08-05'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품5', 'price' => '₩80,000', 'date' => '2024-07-22'),
                     );
 
                     foreach ($orders as $index => $order) {
@@ -391,11 +395,11 @@
                     <?php
                     // 예시 데이터 - 실제 구현 시 데이터베이스에서 불러와야 함
                     $favorites = array(
-                        array('image' => './assets/images/hoodie6.png', 'name' => '찜 상품1', 'price' => '₩70,000'),
-                        array('image' => './assets/images/hoodie7.png', 'name' => '찜 상품2', 'price' => '₩80,000'),
-                        array('image' => './assets/images/hoodie8.png', 'name' => '찜 상품3', 'price' => '₩90,000'),
-                        array('image' => './assets/images/hoodie9.png', 'name' => '찜 상품4', 'price' => '₩100,000'),
-                        array('image' => './assets/images/hoodie10.png', 'name' => '찜 상품5', 'price' => '₩110,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품1', 'price' => '₩70,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품2', 'price' => '₩80,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품3', 'price' => '₩90,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품4', 'price' => '₩100,000'),
+                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품5', 'price' => '₩110,000'),
                     );
 
                     foreach ($favorites as $index => $favorite) {
