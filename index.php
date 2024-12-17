@@ -80,10 +80,10 @@
 
         .product_list {
             display: grid;
-            gap: 16px;
+            gap: 60px;
             width: 100%;
             justify-items: center;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
     </style>
 </head>
