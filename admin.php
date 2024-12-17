@@ -1,3 +1,51 @@
+<?php
+// admin.php
+
+session_start(); // 세션 시작을 최상단에 위치
+
+// 더미 데이터 초기화
+if (!isset($_SESSION['products'])) {
+    $_SESSION['products'] = array(
+        array('id' => 1, 'image' => './assets/images/hoodie1.png', 'name' => '더미 후디1', 'price' => '₩50,000', 'description' => '<p>이것은 더미 후디1의 설명입니다.</p>'),
+        array('id' => 2, 'image' => './assets/images/hoodie2.png', 'name' => '더미 후디2', 'price' => '₩60,000', 'description' => '<p>이것은 더미 후디2의 설명입니다.</p>'),
+        array('id' => 3, 'image' => './assets/images/hoodie3.png', 'name' => '더미 후디3', 'price' => '₩55,000', 'description' => '<p>이것은 더미 후디3의 설명입니다.</p>'),
+    );
+}
+
+if (!isset($_SESSION['users'])) {
+    $_SESSION['users'] = array(
+        array('id' => 1, 'username' => 'user1', 'email' => 'user1@example.com'),
+        array('id' => 2, 'username' => 'user2', 'email' => 'user2@example.com'),
+        array('id' => 3, 'username' => 'user3', 'email' => 'user3@example.com'),
+    );
+}
+
+if (!isset($_SESSION['posts'])) {
+    $_SESSION['posts'] = array(
+        array(
+            'id' => 1,
+            'title' => '첫 번째 게시물',
+            'content' => '<p>이것은 첫 번째 더미 게시물의 내용입니다.</p>',
+            'author' => '관리자',
+            'date' => '2024-04-01'
+        ),
+        array(
+            'id' => 2,
+            'title' => '두 번째 게시물',
+            'content' => '<p>이것은 두 번째 더미 게시물의 내용입니다.</p>',
+            'author' => '관리자',
+            'date' => '2024-04-02'
+        ),
+        array(
+            'id' => 3,
+            'title' => '세 번째 게시물',
+            'content' => '<p>이것은 세 번째 더미 게시물의 내용입니다.</p>',
+            'author' => '관리자',
+            'date' => '2024-04-03'
+        ),
+    );
+}
+?>
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -65,6 +113,7 @@
             border-radius: 8px;
             width: 100%;
             min-height: 750px;
+            color: var(--white);
         }
 
         .form_group {
@@ -117,6 +166,7 @@
 
             <div class="admin_mode">
                 <a href="./admin.php?mode=product" class="<?= (!isset($_GET['mode']) || $_GET['mode'] == 'product') ? 'active' : '' ?>">상품 관리</a>
+                <a href="./admin.php?mode=add_product" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'add_product') ? 'active' : '' ?>">상품 추가</a>
                 <a href="./admin.php?mode=board" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'board') ? 'active' : '' ?>">게시물 관리</a>
                 <a href="./admin.php?mode=user" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'user') ? 'active' : '' ?>">회원 관리</a>
             </div>
@@ -128,6 +178,12 @@
                 switch ($mode) {
                     case 'product':
                         include("./Components/ProductManager.php");
+                        break;
+                    case 'add_product':
+                        include("./Components/AddProduct.php");
+                        break;
+                    case 'board':
+                        include("./Components/PostManager.php"); // 게시물 관리 컴포넌트 포함
                         break;
                     case 'user':
                         include("./Components/UserManager.php");

@@ -1,45 +1,72 @@
-<h3>회원 관리</h3>
-<div class="table_box">
-    <table>
+<?php
+// UserManager.php
+
+// session_start(); // 제거
+
+// 더미 데이터 초기화
+if (!isset($_SESSION['users'])) {
+    $_SESSION['users'] = array(
+        array('id' => 1, 'username' => 'user1', 'email' => 'user1@example.com'),
+        array('id' => 2, 'username' => 'user2', 'email' => 'user2@example.com'),
+        array('id' => 3, 'username' => 'user3', 'email' => 'user3@example.com'),
+    );
+}
+
+// 사용자 삭제 처리
+if (isset($_GET['delete_user'])) {
+    $id = intval($_GET['delete_user']);
+    if (isset($_SESSION['users'])) {
+        foreach ($_SESSION['users'] as $index => $user) {
+            if ($user['id'] === $id) {
+                unset($_SESSION['users'][$index]);
+                $_SESSION['users'] = array_values($_SESSION['users']); // 인덱스 재정렬
+                $delete_success = "사용자가 삭제되었습니다.";
+                break;
+            }
+        }
+    }
+}
+?>
+
+<div class="user_manager">
+    <h3>회원 관리</h3>
+
+    <?php if (isset($delete_success)): ?>
+        <p style="color: var(--green);"><?php echo $delete_success; ?></p>
+    <?php endif; ?>
+
+    <!-- 사용자 목록 -->
+    <h4>등록된 사용자 목록</h4>
+    <table style="width:100%; border-collapse: collapse; color: var(--white);">
         <thead>
             <tr>
-                <th>회원 ID</th>
-                <th>이름</th>
-                <th>이메일</th>
-                <th>역할</th>
-                <th>관리</th>
+                <th style="border: 1px solid var(--light-gray); padding: 8px;">ID</th>
+                <th style="border: 1px solid var(--light-gray); padding: 8px;">사용자명</th>
+                <th style="border: 1px solid var(--light-gray); padding: 8px;">이메일</th>
+                <th style="border: 1px solid var(--light-gray); padding: 8px;">작업</th>
             </tr>
         </thead>
         <tbody>
             <?php
-            // 유저 데이터를 배열로 처리
-            $users = [
-                ['id' => 1, 'name' => '홍길동', 'email' => 'user1@example.com', 'role' => '관리자'],
-                ['id' => 2, 'name' => '김철수', 'email' => 'user2@example.com', 'role' => '회원'],
-                ['id' => 3, 'name' => '이영희', 'email' => 'user3@example.com', 'role' => '회원'],
-            ];
-
-            foreach ($users as $user) {
-                echo "<tr>
-                        <td>{$user['id']}</td>
-                        <td>{$user['name']}</td>
-                        <td>{$user['email']}</td>
-                        <td>
-                            <form method='POST' action='./update_user.php' style='display:inline-block;'>
-                                <input type='hidden' name='id' value='{$user['id']}'>
-                                <select name='role' onchange='this.form.submit()'>
-                                    <option value='관리자' " . ($user['role'] == '관리자' ? 'selected' : '') . ">관리자</option>
-                                    <option value='회원' " . ($user['role'] == '회원' ? 'selected' : '') . ">회원</option>
-                                </select>
-                            </form>
-                        </td>
-                        <td>
-                            <a href='./reset_password.php?id={$user['id']}' onclick='return confirm(\"정말 비밀번호를 초기화하시겠습니까?\")'>비밀번호 초기화</a> |
-                            <a href='./delete_user.php?id={$user['id']}' onclick='return confirm(\"정말 삭제하시겠습니까?\")'>삭제</a>
-                        </td>
-                      </tr>";
-            }
+            if (isset($_SESSION['users']) && count($_SESSION['users']) > 0):
+                foreach ($_SESSION['users'] as $user):
             ?>
+                    <tr>
+                        <td style="border: 1px solid var(--light-gray); padding: 8px;"><?php echo htmlspecialchars($user['id']); ?></td>
+                        <td style="border: 1px solid var(--light-gray); padding: 8px;"><?php echo htmlspecialchars($user['username']); ?></td>
+                        <td style="border: 1px solid var(--light-gray); padding: 8px;"><?php echo htmlspecialchars($user['email']); ?></td>
+                        <td style="border: 1px solid var(--light-gray); padding: 8px;">
+                            <a href="admin.php?mode=user&delete_user=<?php echo $user['id']; ?>" onclick="return confirm('정말 삭제하시겠습니까?');" style="color: var(--red); text-decoration: underline;">삭제</a>
+                        </td>
+                    </tr>
+                <?php
+                endforeach;
+            else:
+                ?>
+                <tr>
+                    <td colspan="4" style="border: 1px solid var(--light-gray); padding: 8px; text-align: center;">등록된 사용자가 없습니다.</td>
+                </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
