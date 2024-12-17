@@ -27,14 +27,19 @@
             flex-direction: column;
         }
 
-        .section_title {
+        .section_header {
             width: 100%;
-            text-align: left;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--light-gray);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            justify-content: space-between;
+        }
+
+        .section_title {
             font-size: 24px;
             font-weight: bold;
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--light-gray);
-            padding-bottom: 8px;
         }
 
         .product_list {
@@ -73,37 +78,6 @@
             font-size: 16px;
             color: var(--gray);
         }
-
-        /* 검색바 스타일 */
-        .search_container {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 16px;
-        }
-
-        .search_container input {
-            padding: 8px;
-            border: 1px solid var(--light-gray);
-            border-radius: 4px;
-            background-color: var(--black);
-            color: var(--white);
-        }
-
-        .search_container button {
-            padding: 8px 16px;
-            margin-left: 8px;
-            background-color: var(--main);
-            border: none;
-            color: var(--black);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .search_container button:hover {
-            background-color: var(--main-hover);
-        }
     </style>
 </head>
 
@@ -114,12 +88,9 @@
         <div class="index_view view">
             <!-- 상품 리스트 섹션 -->
             <div class="ranking_section">
-                <h2 class="section_title">상품 리스트</h2>
-                <div class="search_container">
-                    <form method="GET" action="">
-                        <input type="text" name="search" placeholder="상품 검색...">
-                        <button type="submit">검색</button>
-                    </form>
+                <div class="section_header">
+                    <h2 class="section_title">상품 리스트</h2>
+                    <?php include("./Components/SearchComponents.php"); ?>
                 </div>
                 <div class="product_list">
                     <?php
