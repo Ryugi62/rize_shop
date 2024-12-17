@@ -7,6 +7,7 @@
             <li class="index_menu"><a href="/">메인</a></li>
             <li class="product_menu"><a href="/product.php">상품</a></li>
             <li class="board_menu"><a href="/board.php">게시판</a></li>
+            <li class="mypage_menu"><a href="/mypage.php">마이페이지</a></li>
             <li class="admin_menu"><a href="/admin.php">관리자페이지</a></li>
         </ul>
 
