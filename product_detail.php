@@ -369,7 +369,9 @@ $stars_html = str_repeat("★", $full_stars) . str_repeat("☆", $empty_stars);
                             <?php endif; ?>
                         </form>
 
+                        <!-- 바로 구매하기 폼 추가 -->
                         <form action="checkout.php" method="post">
+                            <input type="hidden" name="action" value="buy_direct">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
                             <input type="hidden" name="quantity" value="1">
                             <button type="submit">바로 구매하기</button>

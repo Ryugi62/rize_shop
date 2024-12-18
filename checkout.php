@@ -33,7 +33,7 @@ foreach ($cart_items as $item) {
 
 // 배송 예정일: 현재 시점에서 일주일 뒤
 $oneWeekLater = new DateTime('+1 week');
-// 요일 매핑: DateTime::format('D')는 영어 약자 요일(Sun, Mon...)을 반환
+// 요일 매핑
 $weekMap = [
     'Sun' => '일',
     'Mon' => '월',
@@ -67,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $final_price = 0;
     }
 
-    // 주문 생성
+    // 주문 생성 및 재고 반영
+    $product_ids = [];
     foreach ($cart_items as $ci) {
         $ord = $pdo->prepare("INSERT INTO orders (user_id, product_name, product_image, price, product_id, status) VALUES (:user_id, :pn, :pi, :pr, :pid, 'pending')");
         $ord->execute([
@@ -81,6 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // 재고 감소 및 판매량 증가
         $updPrd = $pdo->prepare("UPDATE products SET sold_count = sold_count + :qty, stock = stock - :qty WHERE id=:id AND stock >= :qty");
         $updPrd->execute(['qty' => $ci['quantity'], 'id' => $ci['product_id']]);
+
+        // 나중에 favorites에서 제거하기 위해 product_id 모음
+        $product_ids[] = $ci['product_id'];
     }
 
     // 포인트 차감 처리
@@ -94,6 +98,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // 장바구니 비우기
     $delC = $pdo->prepare("DELETE FROM cart WHERE user_id=:uid");
     $delC->execute(['uid' => $user_id]);
+
+    // 찜하기 해제 (해당 product_id 전부 favorites에서 제거)
+    if (!empty($product_ids)) {
+        $in_placeholders = implode(',', array_fill(0, count($product_ids), '?'));
+        $params = $product_ids;
+        $params[] = $user_id; // user_id를 마지막에 넣을 예정
+
+        $delF = $pdo->prepare("DELETE FROM favorites WHERE product_id IN ($in_placeholders) AND user_id = ?");
+        $delF->execute(array_merge($product_ids, [$user_id]));
+    }
 
     header("Location: mypage.php?message=구매가 완료되었습니다.");
     exit;
@@ -115,9 +129,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         .checkout_container {
-            max-width: 1200px;
+            width: 100%;
             margin: 40px auto;
             padding: 0 16px;
+            max-width: 1200px;
         }
 
         h1 {
@@ -154,6 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 24px;
+            text-align: center;
         }
 
         th,
@@ -254,7 +270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <div class="user_phone">
                     <p>연락처: <?= htmlspecialchars($user_info['phone']) ?></p>
                 </div>
-                <!-- 주소 변경 페이지로 이동 (address_change.php 구현 필요) -->
                 <a href="address_change.php" class="action-btn" style="margin-top:8px;">배송지 변경</a>
             </div>
         </div>

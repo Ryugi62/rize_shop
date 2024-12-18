@@ -25,19 +25,19 @@ if ($id > 0) {
                        WHERE p.id = :id";
         $select_stmt = $pdo->prepare($select_sql);
         $select_stmt->execute([':id' => $id]);
-        $post = $select_stmt->fetch();
+        $post = $select_stmt->fetch(PDO::FETCH_ASSOC);
 
         // 이전 게시물 조회
         $prev_sql = "SELECT id, title FROM posts WHERE id < :id ORDER BY id DESC LIMIT 1";
         $prev_stmt = $pdo->prepare($prev_sql);
         $prev_stmt->execute([':id' => $id]);
-        $prev_post = $prev_stmt->fetch();
+        $prev_post = $prev_stmt->fetch(PDO::FETCH_ASSOC);
 
         // 다음 게시물 조회
         $next_sql = "SELECT id, title FROM posts WHERE id > :id ORDER BY id ASC LIMIT 1";
         $next_stmt = $pdo->prepare($next_sql);
         $next_stmt->execute([':id' => $id]);
-        $next_post = $next_stmt->fetch();
+        $next_post = $next_stmt->fetch(PDO::FETCH_ASSOC);
 
         // 트랜잭션 커밋
         $pdo->commit();
@@ -50,7 +50,7 @@ if ($id > 0) {
     } catch (PDOException $e) {
         // 오류 발생 시 롤백
         $pdo->rollBack();
-        echo "게시물 조회 중 오류가 발생했습니다: " . htmlspecialchars($e->getMessage());
+        echo "게시물 조회 중 오류가 발생했습니다: " . htmlspecialchars($e->getMessage() ?? '', ENT_QUOTES, 'UTF-8');
         exit();
     }
 } else {
@@ -63,7 +63,7 @@ if ($id > 0) {
 $reaction_sql = "SELECT reaction, COUNT(*) as count FROM post_reactions WHERE post_id = :post_id GROUP BY reaction";
 $reaction_stmt = $pdo->prepare($reaction_sql);
 $reaction_stmt->execute([':post_id' => $id]);
-$reactions = $reaction_stmt->fetchAll();
+$reactions = $reaction_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 좋아요/싫어요 수
 $likes = 0;
@@ -76,7 +76,7 @@ foreach ($reactions as $reaction) {
     }
 }
 
-// 댓글 조회 (계층적 구조) 및 마지막 댓글 ID 반환
+// 댓글 조회 (계층적 구조)
 function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_group_id = null)
 {
     $sql = "SELECT c.id, c.user_id, u.username, c.content, c.created_at 
@@ -97,7 +97,7 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
         $stmt->execute([':post_id' => $post_id, ':parent_id' => $parent_id]);
     }
 
-    $comments = $stmt->fetchAll();
+    $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $total_comments = count($comments);
     $last_id = null;
 
@@ -116,14 +116,14 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             $comment_class .= ' reply';
         }
 
-        echo '<div class="' . $comment_class . '" data-top-level-id="' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<div class="' . $comment_class . '" data-top-level-id="' . htmlspecialchars($effective_group_id ?? '', ENT_QUOTES, 'UTF-8') . '">';
         echo '<div class="comment-header">';
-        echo '<strong>' . htmlspecialchars($comment['username'], ENT_QUOTES, 'UTF-8') . '</strong> ';
-        echo '<span>' . htmlspecialchars($comment['created_at'], ENT_QUOTES, 'UTF-8') . '</span>';
+        echo '<strong>' . htmlspecialchars($comment['username'] ?? '', ENT_QUOTES, 'UTF-8') . '</strong> ';
+        echo '<span>' . htmlspecialchars($comment['created_at'] ?? '', ENT_QUOTES, 'UTF-8') . '</span>';
         echo '</div>';
-        echo '<div class="comment-content">' . nl2br(htmlspecialchars($comment['content'], ENT_QUOTES, 'UTF-8')) . '</div>';
+        echo '<div class="comment-content">' . nl2br(htmlspecialchars($comment['content'] ?? '', ENT_QUOTES, 'UTF-8')) . '</div>';
         // "답글 달기" 버튼에 그룹 ID 할당
-        echo '<a href="#" class="reply-button" data-group-id="' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">답글 달기</a>';
+        echo '<a href="#" class="reply-button" data-group-id="' . htmlspecialchars($effective_group_id ?? '', ENT_QUOTES, 'UTF-8') . '">답글 달기</a>';
 
         // 자식 댓글 렌더링
         get_comments($pdo, $post_id, $comment['id'], $level + 1, $group_id);
@@ -133,11 +133,11 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
 
         // 마지막 댓글에만 답글 폼 표시
         if ($index === $total_comments - 1) {
-            echo '<div class="reply-form-container" id="reply-form-group-' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<div class="reply-form-container" id="reply-form-group-' . htmlspecialchars($effective_group_id ?? '', ENT_QUOTES, 'UTF-8') . '">';
             if (isset($_SESSION['user_id'])) {
                 echo '<form action="./api/add_comment.php" method="POST" class="reply_form">';
-                echo '<input type="hidden" name="post_id" value="' . htmlspecialchars($post_id, ENT_QUOTES, 'UTF-8') . '">';
-                echo '<input type="hidden" name="parent_id" value="' . htmlspecialchars($comment['id'], ENT_QUOTES, 'UTF-8') . '">';
+                echo '<input type="hidden" name="post_id" value="' . htmlspecialchars($post_id ?? '', ENT_QUOTES, 'UTF-8') . '">';
+                echo '<input type="hidden" name="parent_id" value="' . htmlspecialchars($comment['id'] ?? '', ENT_QUOTES, 'UTF-8') . '">';
                 echo '<textarea name="content" rows="3" placeholder="답글을 작성하세요" required></textarea>';
                 echo '<button type="submit">답글 작성</button>';
                 echo '</form>';
@@ -162,7 +162,7 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?> - RISZE</title>
+    <title><?= htmlspecialchars($post['title'] ?? '', ENT_QUOTES, 'UTF-8') ?> - RISZE</title>
     <link rel="stylesheet" href="./style.css">
     <style>
         /* board_view.php 전용 스타일 추가 */
@@ -210,17 +210,6 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
         .edit-button:hover,
         .delete-button:hover {
             background-color: var(--main-hover);
-            color: var(--black-hover);
-        }
-
-        .delete-button {
-            background-color: var(--red);
-            color: var(--white);
-        }
-
-        .delete-button:hover {
-            background-color: var(--red-hover);
-            color: var(--white-active);
         }
 
         .comment {
@@ -259,13 +248,10 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
 
         .reply-form-container {
             display: none;
-            /* 기본적으로 숨김 */
             margin-top: 10px;
             padding-left: 40px;
-            /* 대댓글과 동일한 들여쓰기 */
         }
 
-        /* 댓글 및 대댓글 폼 스타일 */
         .comment_form textarea,
         .reply_form textarea {
             width: 100%;
@@ -292,10 +278,8 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
         .comment_form button:hover,
         .reply_form button:hover {
             background-color: var(--main-hover);
-            color: var(--black-hover);
         }
 
-        /* 게시물 정보 및 내용 스타일 */
         .post_info {
             width: 100%;
             display: flex;
@@ -315,6 +299,9 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             color: var(--white);
             min-height: 550px;
         }
+
+        /* 여기서 post['content'] HTML 그대로 출력 */
+        /* <?= $post['content'] ?? '' ?> */
 
         .post_reactions {
             display: flex;
@@ -372,7 +359,6 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 모든 "답글 달기" 버튼에 클릭 이벤트 리스너 추가
             document.querySelectorAll('.reply-button').forEach(function(button) {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -380,17 +366,14 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
                     const replyForm = document.getElementById('reply-form-group-' + groupId);
 
                     if (replyForm) {
-                        // 모든 reply-form-container 숨기기
                         document.querySelectorAll('.reply-form-container').forEach(function(form) {
                             if (form.id !== 'reply-form-group-' + groupId) {
                                 form.style.display = 'none';
                             }
                         });
 
-                        // 현재 클릭한 그룹의 reply-form-container 토글
                         if (replyForm.style.display === 'none' || replyForm.style.display === '') {
                             replyForm.style.display = 'block';
-                            // 포커스 이동
                             const textarea = replyForm.querySelector('textarea');
                             if (textarea) {
                                 textarea.focus();
@@ -404,7 +387,6 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
                 });
             });
 
-            // 삭제 버튼 클릭 시 확인 창 표시
             document.querySelectorAll('.delete-button').forEach(function(button) {
                 button.addEventListener('click', function(e) {
                     if (!confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
@@ -422,12 +404,12 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
     <main>
         <div class="view view_post">
             <div class="post_title_container">
-                <h1><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+                <h1><?= htmlspecialchars($post['title'] ?? '', ENT_QUOTES, 'UTF-8') ?></h1>
                 <div class="edit-delete-buttons">
-                    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] === $post['user_id']): ?>
-                        <a href="./edit_post.php?id=<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>" class="edit-button">수정</a>
+                    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] === ($post['user_id'] ?? '')): ?>
+                        <a href="./edit_post.php?id=<?= htmlspecialchars($post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" class="edit-button">수정</a>
                         <form action="./delete_post.php" method="POST" onsubmit="return confirm('정말로 이 게시물을 삭제하시겠습니까?');">
-                            <input type="hidden" name="id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="hidden" name="id" value="<?= htmlspecialchars($post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="delete-button">삭제</button>
                         </form>
                     <?php endif; ?>
@@ -435,37 +417,38 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             </div>
             <div class="post_info">
                 <div>
-                    <span>작성자: <?= htmlspecialchars($post['username'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <?php if ($post['updated_at'] && $post['updated_at'] != $post['created_at']): ?>
-                        <span> | 수정일: <?= htmlspecialchars($post['updated_at'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span>작성자: <?= htmlspecialchars($post['username'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (($post['updated_at'] ?? '') && ($post['updated_at'] != $post['created_at'])): ?>
+                        <span> | 수정일: <?= htmlspecialchars($post['updated_at'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     <?php else: ?>
-                        <span> | 작성일: <?= htmlspecialchars($post['created_at'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span> | 작성일: <?= htmlspecialchars($post['created_at'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                 </div>
                 <div>
-                    <span>조회수: <?= htmlspecialchars($post['view'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span>조회수: <?= htmlspecialchars($post['view'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
             </div>
             <div class="post_content">
-                <?= nl2br(htmlspecialchars($post['content'], ENT_QUOTES, 'UTF-8')) ?>
+                <!-- 여기서 WYSIWYG HTML을 그대로 출력 -->
+                <?= $post['content'] ?? '' ?>
             </div>
             <div class="post_reactions">
                 <!-- 좋아요 버튼 -->
                 <form action="./api/react_post.php" method="POST" style="display:inline;">
-                    <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="reaction" value="like">
                     <button type="submit">
                         👍 좋아요
-                        <span class="count"><?= htmlspecialchars($likes, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="count"><?= htmlspecialchars($likes ?? 0, ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 </form>
                 <!-- 싫어요 버튼 -->
                 <form action="./api/react_post.php" method="POST" style="display:inline;">
-                    <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="reaction" value="dislike">
                     <button type="submit">
                         👎 싫어요
-                        <span class="count"><?= htmlspecialchars($dislikes, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="count"><?= htmlspecialchars($dislikes ?? 0, ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 </form>
                 <!-- 전체 게시물 목록으로 돌아가는 버튼 -->
@@ -473,12 +456,12 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             </div>
             <div class="navigation_links">
                 <?php if ($prev_post): ?>
-                    <a href="./board_view.php?id=<?= htmlspecialchars($prev_post['id'], ENT_QUOTES, 'UTF-8') ?>" title="이전 게시물">&laquo; <?= htmlspecialchars($prev_post['title'], ENT_QUOTES, 'UTF-8') ?></a>
+                    <a href="./board_view.php?id=<?= htmlspecialchars($prev_post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" title="이전 게시물">&laquo; <?= htmlspecialchars($prev_post['title'] ?? '', ENT_QUOTES, 'UTF-8') ?></a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
                 <?php if ($next_post): ?>
-                    <a href="./board_view.php?id=<?= htmlspecialchars($next_post['id'], ENT_QUOTES, 'UTF-8') ?>" title="다음 게시물"><?= htmlspecialchars($next_post['title'], ENT_QUOTES, 'UTF-8') ?> &raquo;</a>
+                    <a href="./board_view.php?id=<?= htmlspecialchars($next_post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" title="다음 게시물"><?= htmlspecialchars($next_post['title'] ?? '', ENT_QUOTES, 'UTF-8') ?> &raquo;</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
@@ -488,7 +471,7 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <div class="comment_form">
                         <form action="./api/add_comment.php" method="POST">
-                            <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="hidden" name="post_id" value="<?= htmlspecialchars($post['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <textarea name="content" rows="4" placeholder="댓글을 작성하세요" required></textarea>
                             <button type="submit">댓글 작성</button>
                         </form>
@@ -499,7 +482,7 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
 
                 <?php
                 // 댓글 출력
-                get_comments($pdo, $post['id']);
+                get_comments($pdo, $post['id'] ?? 0);
                 ?>
             </div>
         </div>
