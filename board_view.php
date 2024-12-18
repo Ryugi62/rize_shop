@@ -2,7 +2,7 @@
 // board_view.php
 
 session_start();
-require_once './config/db.php'; // 올바른 데이터베이스 연결 설정 파일 포함
+require_once './config/db.php'; // 데이터베이스 연결 설정 파일 포함
 
 // 게시물 ID 받기
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -76,8 +76,8 @@ foreach ($reactions as $reaction) {
     }
 }
 
-// 댓글 조회 (계층적 구조)
-function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0)
+// 댓글 조회 (계층적 구조) 및 마지막 댓글 ID 반환
+function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_group_id = null)
 {
     $sql = "SELECT c.id, c.user_id, u.username, c.content, c.created_at 
             FROM comments c
@@ -98,33 +98,61 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0)
     }
 
     $comments = $stmt->fetchAll();
+    $total_comments = count($comments);
+    $last_id = null;
 
-    foreach ($comments as $comment) {
-        echo '<div class="comment">';
+    foreach ($comments as $index => $comment) {
+        // 최상위 댓글 그룹 ID 설정
+        if ($level === 0) {
+            $group_id = $comment['id'];
+        }
+
+        // 현재 그룹 ID 설정
+        $effective_group_id = $level === 0 ? $comment['id'] : $current_group_id;
+
+        // 댓글의 레벨에 따라 클래스 추가
+        $comment_class = 'comment';
+        if ($level > 0) {
+            $comment_class .= ' reply';
+        }
+
+        echo '<div class="' . $comment_class . '" data-top-level-id="' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">';
         echo '<div class="comment-header">';
         echo '<strong>' . htmlspecialchars($comment['username'], ENT_QUOTES, 'UTF-8') . '</strong> ';
         echo '<span>' . htmlspecialchars($comment['created_at'], ENT_QUOTES, 'UTF-8') . '</span>';
         echo '</div>';
         echo '<div class="comment-content">' . nl2br(htmlspecialchars($comment['content'], ENT_QUOTES, 'UTF-8')) . '</div>';
-        echo '<a href="#" class="reply-button" data-comment-id="' . $comment['id'] . '">답글 달기</a>';
+        // "답글 달기" 버튼에 그룹 ID 할당
+        echo '<a href="#" class="reply-button" data-group-id="' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">답글 달기</a>';
 
-        // 대댓글 재귀 호출
-        echo '<div class="reply-form-container" id="reply-form-' . $comment['id'] . '">';
-        if (isset($_SESSION['user_id'])) {
-            echo '<form action="./api/add_comment.php" method="POST" class="reply_form">';
-            echo '<input type="hidden" name="post_id" value="' . htmlspecialchars($post_id, ENT_QUOTES, 'UTF-8') . '">';
-            echo '<input type="hidden" name="parent_id" value="' . htmlspecialchars($comment['id'], ENT_QUOTES, 'UTF-8') . '">';
-            echo '<textarea name="content" rows="3" placeholder="답글을 작성하세요" required></textarea>';
-            echo '<button type="submit">답글 작성</button>';
-            echo '</form>';
-        } else {
-            echo '<p>답글을 작성하려면 <a href="./login.php">로그인</a>하세요.</p>';
+        // 자식 댓글 렌더링
+        get_comments($pdo, $post_id, $comment['id'], $level + 1, $group_id);
+
+        // 현재 댓글의 마지막 ID 설정
+        $last_id = $comment['id'];
+
+        // 마지막 댓글에만 답글 폼 표시
+        if ($index === $total_comments - 1) {
+            echo '<div class="reply-form-container" id="reply-form-group-' . htmlspecialchars($effective_group_id, ENT_QUOTES, 'UTF-8') . '">';
+            if (isset($_SESSION['user_id'])) {
+                echo '<form action="./api/add_comment.php" method="POST" class="reply_form">';
+                echo '<input type="hidden" name="post_id" value="' . htmlspecialchars($post_id, ENT_QUOTES, 'UTF-8') . '">';
+                echo '<input type="hidden" name="parent_id" value="' . htmlspecialchars($comment['id'], ENT_QUOTES, 'UTF-8') . '">';
+                echo '<textarea name="content" rows="3" placeholder="답글을 작성하세요" required></textarea>';
+                echo '<button type="submit">답글 작성</button>';
+                echo '</form>';
+            } else {
+                echo '<p>답글을 작성하려면 <a href="./login.php">로그인</a>하세요.</p>';
+            }
+            echo '</div>';
         }
-        echo '</div>';
 
-        // 대댓글 출력 (재귀)
-        get_comments($pdo, $post_id, $comment['id'], $level + 1);
         echo '</div>';
+    }
+
+    // 현재 그룹의 마지막 댓글 ID 반환
+    if ($level === 0 && count($comments) > 0) {
+        $current_group_id = $last_id;
     }
 }
 ?>
@@ -141,162 +169,25 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0)
 
         .view_post {
             background-color: var(--light-black);
-            padding: 40px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
             color: var(--white);
-            margin: 40px auto;
         }
 
-        .view_post h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--gray);
-            padding-bottom: 10px;
-        }
-
-        .post_info {
+        .post_title_container {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9em;
-            margin-bottom: 20px;
-            color: var(--gray);
-        }
-
-        .post_content {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: var(--white);
-        }
-
-        .post_reactions {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .post_reactions button {
-            display: flex;
             align-items: center;
-            gap: 5px;
-            background-color: var(--black);
-            color: var(--white);
-            border: 1px solid var(--light-gray);
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
         }
 
-        .post_reactions button:hover {
-            background-color: var(--black-hover);
+        .post_title_container h1 {
+            font-size: 2em;
+            margin: 0;
         }
 
-        .navigation_links {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 40px;
-        }
-
-        .navigation_links a {
-            color: var(--main);
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: color 0.3s;
-        }
-
-        .navigation_links a:hover {
-            color: var(--main-hover);
-        }
-
-        .comments_section {
-            margin-top: 40px;
-            color: var(--white);
-        }
-
-        .comments_section h2 {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--gray);
-            padding-bottom: 10px;
-        }
-
-        .comment_form textarea,
-        .reply_form textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--gray);
-            border-radius: 8px;
-            background-color: var(--black);
-            color: var(--white);
-            resize: vertical;
-            margin-bottom: 10px;
-        }
-
-        .comment_form button,
-        .reply_form button {
-            background-color: var(--main);
-            color: var(--black);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .comment_form button:hover,
-        .reply_form button:hover {
-            background-color: var(--main-hover);
-            color: var(--black-hover);
-        }
-
-        .comment {
-            border-bottom: 1px solid var(--gray);
-            padding: 15px 0;
-        }
-
-        .comment:last-child {
-            border-bottom: none;
-        }
-
-        .comment-header {
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-
-        .comment-content {
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-
-        .reply-button {
-            font-size: 0.8em;
-            color: var(--main);
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .reply-button:hover {
-            color: var(--main-hover);
-        }
-
-        .reply-form-container {
-            margin-top: 10px;
-            padding-left: 20px;
-        }
-
-        /* 수정 및 삭제 버튼 스타일 */
         .edit-delete-buttons {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .edit-delete-buttons a,
-        .edit-delete-buttons form {
-            display: inline;
         }
 
         .edit-button,
@@ -327,19 +218,181 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0)
             background-color: var(--red-hover);
             color: var(--white-active);
         }
+
+        .comment {
+            border-bottom: 1px solid var(--gray);
+            padding: 15px 0;
+        }
+
+        .comment.reply {
+            padding-left: 40px;
+        }
+
+        .comment:last-child {
+            border-bottom: none;
+        }
+
+        .comment-header {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .comment-content {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .reply-button {
+            font-size: 0.8em;
+            color: var(--main);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .reply-button:hover {
+            color: var(--main-hover);
+        }
+
+        .reply-form-container {
+            display: none;
+            /* 기본적으로 숨김 */
+            margin-top: 10px;
+            padding-left: 40px;
+            /* 대댓글과 동일한 들여쓰기 */
+        }
+
+        /* 댓글 및 대댓글 폼 스타일 */
+        .comment_form textarea,
+        .reply_form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            background-color: var(--black);
+            color: var(--white);
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        .comment_form button,
+        .reply_form button {
+            background-color: var(--main);
+            color: var(--black);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .comment_form button:hover,
+        .reply_form button:hover {
+            background-color: var(--main-hover);
+            color: var(--black-hover);
+        }
+
+        /* 게시물 정보 및 내용 스타일 */
+        .post_info {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            color: var(--gray);
+        }
+
+        .post_content {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: var(--white);
+            min-height: 550px;
+        }
+
+        .post_reactions {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .post_reactions button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: var(--black);
+            color: var(--white);
+            border: 1px solid var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .post_reactions button:hover {
+            background-color: var(--black-hover);
+        }
+
+        .navigation_links {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .navigation_links a {
+            color: var(--main);
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: color 0.3s;
+        }
+
+        .navigation_links a:hover {
+            color: var(--main-hover);
+        }
+
+        .comments_section {
+            color: var(--white);
+            margin-top: 40px;
+            width: 100%;
+        }
+
+        .comments_section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray);
+            padding-bottom: 10px;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 댓글 답글 버튼 클릭 시 답글 폼 표시
+            // 모든 "답글 달기" 버튼에 클릭 이벤트 리스너 추가
             document.querySelectorAll('.reply-button').forEach(function(button) {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const commentId = this.getAttribute('data-comment-id');
-                    const replyForm = document.getElementById('reply-form-' + commentId);
-                    if (replyForm.style.display === 'none' || replyForm.style.display === '') {
-                        replyForm.style.display = 'block';
+                    const groupId = this.getAttribute('data-group-id');
+                    const replyForm = document.getElementById('reply-form-group-' + groupId);
+
+                    if (replyForm) {
+                        // 모든 reply-form-container 숨기기
+                        document.querySelectorAll('.reply-form-container').forEach(function(form) {
+                            if (form.id !== 'reply-form-group-' + groupId) {
+                                form.style.display = 'none';
+                            }
+                        });
+
+                        // 현재 클릭한 그룹의 reply-form-container 토글
+                        if (replyForm.style.display === 'none' || replyForm.style.display === '') {
+                            replyForm.style.display = 'block';
+                            // 포커스 이동
+                            const textarea = replyForm.querySelector('textarea');
+                            if (textarea) {
+                                textarea.focus();
+                            }
+                        } else {
+                            replyForm.style.display = 'none';
+                        }
                     } else {
-                        replyForm.style.display = 'none';
+                        console.warn('Reply form not found for group ID:', groupId);
                     }
                 });
             });
@@ -361,17 +414,18 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0)
 
     <main>
         <div class="view view_post">
-            <div class="edit-delete-buttons">
-                <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] === $post['user_id']): ?>
-                    <a href="./edit_post.php?id=<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>" class="edit-button">수정</a>
-                    <form action="./delete_post.php" method="POST" onsubmit="return confirm('정말로 이 게시물을 삭제하시겠습니까?');">
-                        <input type="hidden" name="id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
-                        <button type="submit" class="delete-button">삭제</button>
-                    </form>
-                <?php endif; ?>
+            <div class="post_title_container">
+                <h1><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+                <div class="edit-delete-buttons">
+                    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] === $post['user_id']): ?>
+                        <a href="./edit_post.php?id=<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>" class="edit-button">수정</a>
+                        <form action="./delete_post.php" method="POST" onsubmit="return confirm('정말로 이 게시물을 삭제하시겠습니까?');">
+                            <input type="hidden" name="id" value="<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="submit" class="delete-button">삭제</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
-
-            <h1><?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?></h1>
             <div class="post_info">
                 <div>
                     <span>작성자: <?= htmlspecialchars($post['username'], ENT_QUOTES, 'UTF-8') ?></span>
