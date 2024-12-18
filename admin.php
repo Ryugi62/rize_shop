@@ -61,6 +61,7 @@ if (!isset($_SESSION['posts'])) {
             margin-top: 40px;
             width: 100%;
             max-width: 1200px;
+            height: auto;
         }
 
         .section_header {
@@ -82,6 +83,7 @@ if (!isset($_SESSION['posts'])) {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            width: 100%;
         }
 
         .admin_mode a {
