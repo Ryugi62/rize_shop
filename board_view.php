@@ -168,10 +168,12 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
         /* board_view.php 전용 스타일 추가 */
 
         .view_post {
-            background-color: var(--light-black);
-            padding: 20px;
-            border-radius: 8px;
+            height: auto;
             color: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            background-color: var(--light-black);
+            margin: 40px auto;
         }
 
         .post_title_container {
@@ -466,6 +468,8 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
                         <span class="count"><?= htmlspecialchars($dislikes, ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 </form>
+                <!-- 전체 게시물 목록으로 돌아가는 버튼 -->
+                <button onclick="location.href='./board.php'">목록으로 돌아가기</button>
             </div>
             <div class="navigation_links">
                 <?php if ($prev_post): ?>
