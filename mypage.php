@@ -28,7 +28,7 @@ if (!$user) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - 마이페이지</title>
     <link rel="stylesheet" href="./style.css">
-    <!-- 스타일은 기존 코드에서 유지 -->
+
     <style>
         /* 마이페이지 배너 */
         .mypage_banner {
@@ -354,6 +354,7 @@ if (!$user) {
             display: none;
         }
     </style>
+
 </head>
 
 <body>
@@ -370,7 +371,7 @@ if (!$user) {
             <div class="profile_section">
                 <h2 class="section_title">내 프로필</h2>
                 <div class="profile_info">
-                    <img src="./assets/images/profile_default.png" alt="프로필 사진"> <!-- 기본 프로필 이미지 -->
+                    <img src="./assets/images/profile_default.png" alt="프로필 사진">
                     <div class="profile_details">
                         <p>이름: <?= htmlspecialchars($user['username']); ?></p>
                         <p>이메일: <?= htmlspecialchars($user['email']); ?></p>
@@ -388,14 +389,10 @@ if (!$user) {
                     $query = $pdo->prepare('SELECT product_name, price, product_image, order_date FROM orders WHERE user_id = :user_id ORDER BY order_date DESC');
                     $query->execute(['user_id' => $user_id]);
                     $orders = $query->fetchAll(PDO::FETCH_ASSOC);
-                    $orders_total = count($orders);
-                    $orders_display_limit = 4;
                     ?>
 
-                    <?php foreach ($orders as $index => $order) {
-                        $display_class = ($index < $orders_display_limit) ? '' : ' hidden';
-                    ?>
-                        <div class="order_item<?= $display_class; ?>">
+                    <?php foreach ($orders as $order): ?>
+                        <div class="order_item">
                             <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
                             <div class="order_details">
                                 <p><?= htmlspecialchars($order['product_name']); ?></p>
@@ -403,11 +400,8 @@ if (!$user) {
                                 <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
                             </div>
                         </div>
-                    <?php } ?>
+                    <?php endforeach; ?>
                 </div>
-                <?php if ($orders_total > $orders_display_limit) { ?>
-                    <button class="load_more_btn" data-section="orders">더보기</button>
-                <?php } ?>
             </div>
 
             <!-- 찜 목록 섹션 -->
@@ -415,77 +409,38 @@ if (!$user) {
                 <h2 class="section_title">찜 목록</h2>
                 <div class="favorites_list">
                     <?php
-                    $query = $pdo->prepare('SELECT product_name, price, product_image FROM favorites WHERE user_id = :user_id');
+                    $query = $pdo->prepare('
+                        SELECT p.product_name, p.product_image, p.price 
+                        FROM favorites f 
+                        INNER JOIN products p ON f.product_id = p.id 
+                        WHERE f.user_id = :user_id
+                    ');
                     $query->execute(['user_id' => $user_id]);
                     $favorites = $query->fetchAll(PDO::FETCH_ASSOC);
-                    $favorites_total = count($favorites);
-                    $favorites_display_limit = 4;
                     ?>
 
-                    <?php foreach ($favorites as $index => $favorite) {
-                        $display_class = ($index < $favorites_display_limit) ? '' : ' hidden';
-                    ?>
-                        <div class="favorite_item<?= $display_class; ?>">
+                    <?php foreach ($favorites as $favorite): ?>
+                        <div class="favorite_item">
                             <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
                             <div class="favorite_details">
                                 <p><?= htmlspecialchars($favorite['product_name']); ?></p>
                                 <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
                             </div>
                         </div>
-                    <?php } ?>
+                    <?php endforeach; ?>
                 </div>
-                <?php if ($favorites_total > $favorites_display_limit) { ?>
-                    <button class="load_more_btn" data-section="favorites">더보기</button>
-                <?php } ?>
             </div>
 
             <!-- 포인트 섹션 -->
             <div class="points_section">
                 <h2 class="section_title">내 포인트</h2>
                 <?php
-                // 현재 포인트 계산
                 $query = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1');
                 $query->execute(['user_id' => $user_id]);
-                $current_point = $query->fetch(PDO::FETCH_ASSOC)['balance'] ?? 0;
+                $current_point = $query->fetchColumn() ?? 0;
                 ?>
                 <div class="points_info">
                     <p>현재 포인트: <strong><?= htmlspecialchars(number_format($current_point)); ?>점</strong></p>
-                </div>
-                <div class="points_history">
-                    <h3>포인트 내역</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>날짜</th>
-                                <th>내역</th>
-                                <th>포인트</th>
-                                <th>잔여 포인트</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $query = $pdo->prepare('SELECT created_at, description, points, balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC');
-                            $query->execute(['user_id' => $user_id]);
-                            $points_history = $query->fetchAll(PDO::FETCH_ASSOC);
-                            $points_total = count($points_history);
-                            $points_display_limit = 4;
-                            ?>
-
-                            <?php foreach ($points_history as $index => $history) {
-                                $display_class = ($index < $points_display_limit) ? '' : ' hidden';
-                            ?>
-                                <tr class="point_row<?= $display_class; ?>">
-                                    <td><?= htmlspecialchars($history['created_at']); ?></td>
-                                    <td><?= htmlspecialchars($history['description']); ?></td>
-                                    <td><?= htmlspecialchars(number_format($history['points'])); ?>점</td>
-                                    <td><?= htmlspecialchars(number_format($history['balance'])); ?>점</td>
-                                </tr>
-                            <?php } ?>
-                        </tbody>
-                    </table>
-                    <?php if ($points_total > $points_display_limit) { ?>
-                        <button class="load_more_btn" data-section="points_history">더보기</button>
-                    <?php } ?>
                 </div>
             </div>
 
@@ -497,31 +452,20 @@ if (!$user) {
                     <button class="posts_tab" data-tab="review">리뷰</button>
                     <button class="posts_tab" data-tab="qna">Q&A</button>
                 </div>
-
-                <!-- 게시물 리스트 -->
-                <div class="posts_list active" id="all">
+                <div class="posts_list">
                     <?php
-                    $query = $pdo->prepare('SELECT id, title, created_at, content, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
+                    $query = $pdo->prepare('SELECT id, title, created_at, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
                     $query->execute(['user_id' => $user_id]);
                     $posts = $query->fetchAll(PDO::FETCH_ASSOC);
-                    $posts_total = count($posts);
-                    $posts_display_limit = 4;
                     ?>
 
-                    <?php foreach ($posts as $index => $post) {
-                        $display_class = ($index < $posts_display_limit) ? '' : ' hidden';
-                        $post_type = htmlspecialchars($post['post_type']);
-                    ?>
-                        <div class="post_item<?= $display_class; ?>" data-post-type="<?= $post_type; ?>" onclick="window.location='./board_view.php?id=<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>'">
+                    <?php foreach ($posts as $post): ?>
+                        <div class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>">
                             <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
                             <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
                         </div>
-                    <?php } ?>
+                    <?php endforeach; ?>
                 </div>
-
-                <?php if ($posts_total > $posts_display_limit) { ?>
-                    <button class="load_more_btn" data-section="posts">더보기</button>
-                <?php } ?>
             </div>
         </div>
     </main>
@@ -529,86 +473,25 @@ if (!$user) {
     <?php include("./Components/FooterComponents.php"); ?>
 
     <script>
+        // 탭 필터링 및 더보기 버튼 동작 구현
         document.addEventListener('DOMContentLoaded', function() {
-            const loadMoreButtons = document.querySelectorAll('.load_more_btn');
-
-            loadMoreButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const section = button.getAttribute('data-section');
-                    let items, displayLimit;
-
-                    switch (section) {
-                        case 'orders':
-                            items = document.querySelectorAll('.order_item.hidden');
-                            displayLimit = 4;
-                            break;
-                        case 'favorites':
-                            items = document.querySelectorAll('.favorite_item.hidden');
-                            displayLimit = 4;
-                            break;
-                        case 'points_history':
-                            items = document.querySelectorAll('.point_row.hidden');
-                            displayLimit = 4;
-                            break;
-                        case 'posts':
-                            const activeTab = document.querySelector('.posts_tab.active').getAttribute('data-tab');
-                            if (activeTab === 'all') {
-                                items = document.querySelectorAll('.post_item.hidden');
-                            } else {
-                                items = document.querySelectorAll(`.post_item.hidden[data-post-type="${activeTab}"]`);
-                            }
-                            displayLimit = 4;
-                            break;
-                        default:
-                            items = [];
-                    }
-
-                    for (let i = 0; i < displayLimit && i < items.length; i++) {
-                        items[i].classList.remove('hidden');
-                    }
-
-                    if (items.length <= displayLimit) {
-                        button.style.display = 'none';
-                    }
-                });
-            });
-
-            // 게시물 탭 전환 기능
             const tabs = document.querySelectorAll('.posts_tab');
-            const postsList = document.querySelector('.posts_list');
+            const postItems = document.querySelectorAll('.post_item');
 
             tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const target = tab.getAttribute('data-tab');
+                tab.addEventListener('click', () => {
+                    const tabType = tab.dataset.tab;
 
-                    // 활성화된 탭과 리스트 초기화
                     tabs.forEach(t => t.classList.remove('active'));
-
-                    // 클릭한 탭 활성화
                     tab.classList.add('active');
 
-                    // 필터링된 게시물 표시
-                    const allPosts = document.querySelectorAll('.post_item');
-                    allPosts.forEach(post => {
-                        if (target === 'all' || post.getAttribute('data-post-type') === target) {
-                            post.classList.remove('hidden');
+                    postItems.forEach(post => {
+                        if (tabType === 'all' || post.dataset.postType === tabType) {
+                            post.style.display = '';
                         } else {
-                            post.classList.add('hidden');
+                            post.style.display = 'none';
                         }
                     });
-
-                    // '더보기' 버튼 표시 여부 조정
-                    const totalVisible = Array.from(allPosts).filter(post => {
-                        return target === 'all' || post.getAttribute('data-post-type') === target;
-                    }).length;
-
-                    const initiallyVisible = 4;
-                    const loadMoreButton = document.querySelector(`.load_more_btn[data-section="posts"]`);
-                    if (totalVisible > initiallyVisible) {
-                        loadMoreButton.style.display = 'block';
-                    } else {
-                        loadMoreButton.style.display = 'none';
-                    }
                 });
             });
         });

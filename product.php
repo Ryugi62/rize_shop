@@ -5,10 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - 상품 리스트</title>
-
-    <!-- 외부 스타일 시트 링크 -->
     <link rel="stylesheet" href="./style.css">
-
     <style>
         main {
             position: relative;
@@ -82,7 +79,7 @@
 </head>
 
 <body>
-    <?php include("./Components/HeaderComponents.php") ?>
+    <?php include("./Components/HeaderComponents.php"); ?>
 
     <main>
         <div class="index_view view">
@@ -94,21 +91,26 @@
                 </div>
                 <div class="product_list">
                     <?php
-                    $products = array(
-                        array('id' => 1, 'image' => './assets/images/hoodie1.png', 'name' => '후디1', 'price' => '₩50,000'),
-                        array('id' => 2, 'image' => './assets/images/hoodie1.png', 'name' => '후디2', 'price' => '₩60,000'),
-                        array('id' => 3, 'image' => './assets/images/hoodie1.png', 'name' => '후디3', 'price' => '₩70,000'),
-                        array('id' => 4, 'image' => './assets/images/hoodie1.png', 'name' => '후디4', 'price' => '₩80,000'),
-                        array('id' => 5, 'image' => './assets/images/hoodie1.png', 'name' => '후디5', 'price' => '₩90,000'),
-                        array('id' => 6, 'image' => './assets/images/hoodie1.png', 'name' => '후디6', 'price' => '₩100,000'),
-                    );
+                    include('./config/db.php');
 
-                    foreach ($products as $product) {
-                        echo '<div class="product_item" onclick="location.href=\'product_detail.php?id=' . $product['id'] . '\'">';
-                        echo '<img src="' . htmlspecialchars($product['image']) . '" alt="' . htmlspecialchars($product['name']) . '">';
-                        echo '<h3>' . htmlspecialchars($product['name']) . '</h3>';
-                        echo '<p>' . htmlspecialchars($product['price']) . '</p>';
-                        echo '</div>';
+                    try {
+                        // 상품 데이터 가져오기
+                        $query = $pdo->query('SELECT id, product_name, product_image, price FROM products ORDER BY created_at DESC');
+                        $products = $query->fetchAll(PDO::FETCH_ASSOC);
+
+                        if ($products) {
+                            foreach ($products as $product) {
+                                echo '<div class="product_item" onclick="location.href=\'product_detail.php?id=' . $product['id'] . '\'">';
+                                echo '<img src="' . htmlspecialchars($product['product_image']) . '" alt="' . htmlspecialchars($product['product_name']) . '">';
+                                echo '<h3>' . htmlspecialchars($product['product_name']) . '</h3>';
+                                echo '<p>' . htmlspecialchars(number_format($product['price'])) . '원</p>';
+                                echo '</div>';
+                            }
+                        } else {
+                            echo '<p>등록된 상품이 없습니다.</p>';
+                        }
+                    } catch (PDOException $e) {
+                        echo '<p>데이터를 불러오는 중 문제가 발생했습니다: ' . htmlspecialchars($e->getMessage()) . '</p>';
                     }
                     ?>
                 </div>
@@ -116,7 +118,7 @@
         </div>
     </main>
 
-    <?php include("./Components/FooterComponents.php") ?>
+    <?php include("./Components/FooterComponents.php"); ?>
 </body>
 
 </html>
