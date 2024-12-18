@@ -1,3 +1,11 @@
+<?php
+session_start();
+include('./config/db.php');
+
+// 랭킹 상품 조회 (판매순으로 정렬, 상위 8개)
+$ranking_stmt = $pdo->query("SELECT id, product_name, product_image, price FROM products ORDER BY sold_count DESC LIMIT 8");
+$ranking_products = $ranking_stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -42,11 +50,10 @@
             align-items: center;
             justify-content: center;
             color: var(--white);
-            font-size: 36px;
+            font-size: 3rem;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
             z-index: 1;
-            font-size: 3rem;
         }
 
         #slogan {
@@ -85,6 +92,22 @@
             justify-items: center;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
+
+        .view_all_link {
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .view_all_link a {
+            color: var(--main);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .view_all_link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -108,19 +131,21 @@
                 <h2 class="section_title">랭킹 상품</h2>
                 <div class="product_list">
                     <?php
-                    $ranking_products = array(
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디1', 'price' => '₩50,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디2', 'price' => '₩60,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디3', 'price' => '₩55,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디4', 'price' => '₩70,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디5', 'price' => '₩80,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '랭킹 후디6', 'price' => '₩90,000'),
-                    );
-
-                    foreach ($ranking_products as $product) {
+                    foreach ($ranking_products as $rp) {
+                        $product = array(
+                            'id' => $rp['id'],
+                            'image' => $rp['product_image'],
+                            'name' => $rp['product_name'],
+                            'price' => $rp['price']
+                        );
+                        $mode = '';
                         include("./Components/ProductComponents.php");
                     }
                     ?>
+                </div>
+                <div class="view_all_link">
+                    <!-- < href="product.php">전체상품 보러가기 \→</a> -->
+                    <a href="product.php">전체상품 보러가기 →</a>
                 </div>
             </div>
         </div>
