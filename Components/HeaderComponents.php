@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start(); // 세션 시작
 }
 
-// 로그인 상태 확인
+// 로그인 상태 확인 (세션은 이미 시작된 상태라고 가정)
 $isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin'; // 관리자 여부 확인
 ?>

@@ -1,12 +1,50 @@
+<?php
+// board.php
+
+session_start();
+require_once './config/db.php'; // 데이터베이스 연결 설정 포함
+
+// 현재 모드에 따라 필터링 (전체, 공지사항, 리뷰, Q&A)
+$mode = isset($_GET['mode']) ? $_GET['mode'] : '';
+
+// 유효한 모드인지 확인
+$valid_modes = ['notice', 'review', 'qna'];
+if ($mode && !in_array($mode, $valid_modes)) {
+    // 유효하지 않은 모드일 경우 기본값으로 설정
+    $mode = '';
+}
+
+// 게시물 조회 쿼리
+if ($mode) {
+    $sql = "SELECT p.id, u.username, p.post_type, p.title, p.content, p.created_at, p.view 
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.post_type = :post_type
+            ORDER BY p.created_at DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':post_type' => $mode]);
+} else {
+    // 전체 게시물 조회
+    $sql = "SELECT p.id, u.username, p.post_type, p.title, p.content, p.created_at, p.view 
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+            ORDER BY p.created_at DESC";
+    $stmt = $pdo->query($sql);
+}
+
+$posts = $stmt->fetchAll();
+?>
 <!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RISZE - SHOP</title>
+    <title>게시판 - RISZE</title>
     <link rel="stylesheet" href="./style.css">
     <style>
+        /* 기존 style.css 유지 */
+
         .board_view {
             margin-top: 40px;
             width: 100%;
@@ -26,8 +64,8 @@
         .section_title {
             font-size: 24px;
             font-weight: bold;
+            color: var(--white);
         }
-
 
         .board_mode {
             width: 100%;
@@ -65,6 +103,7 @@
             margin-bottom: 20px;
             border-radius: 8px;
             border: 1px solid var(--light-gray);
+            overflow: hidden;
         }
 
         table {
@@ -101,6 +140,7 @@
 
         .post_title {
             text-align: left;
+            color: var(--white);
         }
 
         .navigation {
@@ -136,23 +176,26 @@
             font-weight: bold;
         }
 
-        .navigation .icon {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-        }
-
-        .navigation .icon:first-child {
-            transform: rotate(180deg);
-        }
-
-        a {
-            color: inherit;
+        a.write_button {
+            padding: 10px 20px;
+            background-color: var(--main);
+            color: var(--black);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, color 0.3s;
             text-decoration: none;
         }
 
-        a:hover {
-            text-decoration: underline;
+        a.write_button:hover {
+            background-color: var(--main-hover);
+            color: var(--black-hover);
+        }
+
+        a.write_button:active {
+            background-color: var(--main-active);
+            color: var(--black-active);
         }
     </style>
 </head>
@@ -164,14 +207,15 @@
         <div class="board_view view">
             <!-- 게시판의 모드를 정하는 4개의 탭: 전체, 공지사항, 리뷰, Q&A -->
             <div class="section_header">
-                <h2 class="section_title">상품 리스트</h2>
-                <?php include("./Components/SearchComponents.php"); ?>
+                <h2 class="section_title">게시판</h2>
+                <!-- 글쓰기 버튼 추가 -->
+                <a href="./write.php" class="write_button">글쓰기</a>
             </div>
             <div class="board_mode">
-                <a href="./board.php" class="<?= !isset($_GET['mode']) ? 'active' : '' ?>">전체</a>
-                <a href="./board.php?mode=notice" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'notice') ? 'active' : '' ?>">공지사항</a>
-                <a href="./board.php?mode=review" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'review') ? 'active' : '' ?>">리뷰</a>
-                <a href="./board.php?mode=qna" class="<?= (isset($_GET['mode']) && $_GET['mode'] == 'qna') ? 'active' : '' ?>">Q & A</a>
+                <a href="./board.php" class="<?= ($mode === '') ? 'active' : '' ?>">전체</a>
+                <a href="./board.php?mode=notice" class="<?= ($mode === 'notice') ? 'active' : '' ?>">공지사항</a>
+                <a href="./board.php?mode=review" class="<?= ($mode === 'review') ? 'active' : '' ?>">리뷰</a>
+                <a href="./board.php?mode=qna" class="<?= ($mode === 'qna') ? 'active' : '' ?>">Q & A</a>
             </div>
             <div class="table_box">
                 <table>
@@ -185,34 +229,28 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // 더미 데이터 배열
-                        $dummy_data = [
-                            ['id' => 1, 'title' => '첫 번째 공지사항', 'writer' => '관리자', 'date' => '2024-12-01', 'view' => 123, 'mode' => 'notice'],
-                            ['id' => 2, 'title' => '두 번째 리뷰', 'writer' => '사용자1', 'date' => '2024-12-02', 'view' => 456, 'mode' => 'review'],
-                            ['id' => 3, 'title' => '세 번째 Q&A', 'writer' => '사용자2', 'date' => '2024-12-03', 'view' => 789, 'mode' => 'qna'],
-                        ];
-
-                        // 현재 모드에 따라 필터링
-                        $mode = isset($_GET['mode']) ? $_GET['mode'] : '';
-                        foreach ($dummy_data as $row) {
-                            if ($mode == '' || $row['mode'] == $mode) {
-                                echo "<tr onclick=\"window.location='./board_view.php?id={$row['id']}'\">
-                                        <td>{$row['id']}</td>
-                                        <td class='post_title'>{$row['title']}</td>
-                                        <td>{$row['writer']}</td>
-                                        <td>{$row['date']}</td>
-                                        <td>{$row['view']}</td>
-                                      </tr>";
-                            }
-                        }
-                        ?>
+                        <?php if (count($posts) > 0): ?>
+                            <?php foreach ($posts as $row): ?>
+                                <tr onclick="window.location='./board_view.php?id=<?= htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8') ?>'" style="cursor:pointer;">
+                                    <td><?= htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td class="post_title"><?= htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($row['username'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($row['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($row['view'], ENT_QUOTES, 'UTF-8') ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5">게시물이 없습니다.</td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
 
-            <!-- 네비게이션 -->
+            <!-- 네비게이션 (페이징 기능은 추가하지 않았습니다) -->
             <div class="navigation">
+                <!-- 페이징 기능을 구현하려면 추가적인 코드가 필요합니다 -->
                 <a href="#" title="처음">⏮</a>
                 <a href="#" title="이전">◀</a>
                 <a href="#" class="active" title="1페이지">1</a>
