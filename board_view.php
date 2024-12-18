@@ -178,6 +178,8 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
         }
 
         .post_title_container h1 {
@@ -299,6 +301,9 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             font-size: 0.9em;
             margin-bottom: 20px;
             color: var(--gray);
+            border-bottom: 1px solid var(--gray);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .post_content {
