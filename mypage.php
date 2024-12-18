@@ -10,16 +10,40 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// 사용자 정보 가져오기
-$query = $pdo->prepare('SELECT username, email, created_at FROM users WHERE id = :user_id');
+// 사용자 정보 가져오기 (role 포함)
+$query = $pdo->prepare('SELECT username, email, created_at, role FROM users WHERE id = :user_id');
 $query->execute(['user_id' => $user_id]);
 $user = $query->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     die('사용자 정보를 찾을 수 없습니다.');
 }
-?>
 
+// 주문 내역 조회
+$orderQuery = $pdo->prepare('SELECT product_name, price, product_image, order_date FROM orders WHERE user_id = :user_id ORDER BY order_date DESC');
+$orderQuery->execute(['user_id' => $user_id]);
+$orders = $orderQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// 찜 목록 조회
+$favQuery = $pdo->prepare('
+    SELECT p.product_name, p.product_image, p.price 
+    FROM favorites f 
+    INNER JOIN products p ON f.product_id = p.id 
+    WHERE f.user_id = :user_id
+');
+$favQuery->execute(['user_id' => $user_id]);
+$favorites = $favQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// 포인트 조회
+$pointQuery = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1');
+$pointQuery->execute(['user_id' => $user_id]);
+$current_point = $pointQuery->fetchColumn() ?? 0;
+
+// 내가 작성한 게시물 (review, qna, notice)
+$postQuery = $pdo->prepare('SELECT id, title, created_at, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
+$postQuery->execute(['user_id' => $user_id]);
+$posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -30,7 +54,32 @@ if (!$user) {
     <link rel="stylesheet" href="./style.css">
 
     <style>
-        /* 마이페이지 배너 */
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
+            margin: 0;
+        }
+
+        :root {
+            --main: #2ef3e1;
+            --main-hover: #26d4c3;
+            --white: #ffffff;
+            --black: #000000;
+            --gray: #808080;
+            --light-gray: #d0d0d0;
+            --light-black: #202020;
+        }
+
+        a {
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
         .mypage_banner {
             position: relative;
             width: 100%;
@@ -46,10 +95,8 @@ if (!$user) {
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
             margin-bottom: 40px;
             background-image: url('./assets/images/main_banner.jpg');
-            /* 배너 이미지 추가 */
         }
 
-        /* 마이페이지 콘텐츠 */
         .mypage_content {
             width: 100%;
             max-width: 1200px;
@@ -60,7 +107,6 @@ if (!$user) {
             gap: 40px;
         }
 
-        /* 섹션 제목 */
         .section_title {
             font-size: 24px;
             font-weight: bold;
@@ -69,7 +115,6 @@ if (!$user) {
             padding-bottom: 8px;
         }
 
-        /* 프로필 섹션 */
         .profile_section {
             display: flex;
             flex-direction: column;
@@ -112,7 +157,6 @@ if (!$user) {
             background-color: var(--main-hover);
         }
 
-        /* 주문 내역 섹션 */
         .orders_section,
         .favorites_section,
         .points_section,
@@ -141,13 +185,15 @@ if (!$user) {
             gap: 12px;
             align-items: center;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
         .order_item:hover,
         .favorite_item:hover,
         .post_item:hover {
             background-color: var(--light-gray);
+            color: var(--black);
         }
 
         .order_item img,
@@ -167,7 +213,6 @@ if (!$user) {
             text-align: center;
         }
 
-        /* 포인트 섹션 */
         .points_section {
             display: flex;
             flex-direction: column;
@@ -181,41 +226,9 @@ if (!$user) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
-        .points_details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .points_details p {
-            margin: 0;
-            font-size: 18px;
-        }
-
-        .points_history {
-            margin-top: 16px;
-        }
-
-        .points_history table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .points_history th,
-        .points_history td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid var(--gray);
-        }
-
-        .points_history th {
-            background-color: var(--gray);
-            color: var(--black);
-        }
-
-        /* 게시물 섹션 */
         .posts_section {
             display: flex;
             flex-direction: column;
@@ -263,19 +276,20 @@ if (!$user) {
             flex-direction: row;
             gap: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, box-shadow 0.3s;
             justify-content: space-between;
             width: 100%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
         .post_item:hover {
             background-color: var(--light-gray);
+            color: var(--black);
         }
 
         .post_title {
             font-size: 18px;
             font-weight: bold;
-            color: var(--white);
             text-align: left;
             flex: 1;
         }
@@ -292,25 +306,16 @@ if (!$user) {
             color: var(--white);
         }
 
-        /* 더보기 버튼 */
-        .load_more_btn {
-            margin-top: 16px;
-            padding: 8px 16px;
-            background-color: var(--main);
-            color: var(--black);
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            align-self: center;
-            transition: background-color 0.3s;
+        .no-data-message {
+            text-align: center;
+            font-size: 18px;
+            color: var(--gray);
+            background-color: #222;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
         }
 
-        .load_more_btn:hover {
-            background-color: var(--main-hover);
-        }
-
-        /* 반응형 디자인 */
         @media (max-width: 768px) {
             .profile_info {
                 flex-direction: column;
@@ -348,11 +353,6 @@ if (!$user) {
                 margin-left: 0;
             }
         }
-
-        /* 숨김 클래스 */
-        .hidden {
-            display: none;
-        }
     </style>
 
 </head>
@@ -384,61 +384,47 @@ if (!$user) {
             <!-- 주문 내역 섹션 -->
             <div class="orders_section">
                 <h2 class="section_title">주문 내역</h2>
-                <div class="orders_list">
-                    <?php
-                    $query = $pdo->prepare('SELECT product_name, price, product_image, order_date FROM orders WHERE user_id = :user_id ORDER BY order_date DESC');
-                    $query->execute(['user_id' => $user_id]);
-                    $orders = $query->fetchAll(PDO::FETCH_ASSOC);
-                    ?>
-
-                    <?php foreach ($orders as $order): ?>
-                        <div class="order_item">
-                            <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
-                            <div class="order_details">
-                                <p><?= htmlspecialchars($order['product_name']); ?></p>
-                                <p>가격: <?= htmlspecialchars(number_format($order['price'])); ?>원</p>
-                                <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
+                <?php if (count($orders) === 0): ?>
+                    <div class="no-data-message">아직 주문 내역이 없습니다.</div>
+                <?php else: ?>
+                    <div class="orders_list">
+                        <?php foreach ($orders as $order): ?>
+                            <div class="order_item">
+                                <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
+                                <div class="order_details">
+                                    <p><?= htmlspecialchars($order['product_name']); ?></p>
+                                    <p>가격: <?= htmlspecialchars(number_format($order['price'])); ?>원</p>
+                                    <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
+                                </div>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- 찜 목록 섹션 -->
             <div class="favorites_section">
                 <h2 class="section_title">찜 목록</h2>
-                <div class="favorites_list">
-                    <?php
-                    $query = $pdo->prepare('
-                        SELECT p.product_name, p.product_image, p.price 
-                        FROM favorites f 
-                        INNER JOIN products p ON f.product_id = p.id 
-                        WHERE f.user_id = :user_id
-                    ');
-                    $query->execute(['user_id' => $user_id]);
-                    $favorites = $query->fetchAll(PDO::FETCH_ASSOC);
-                    ?>
-
-                    <?php foreach ($favorites as $favorite): ?>
-                        <div class="favorite_item">
-                            <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
-                            <div class="favorite_details">
-                                <p><?= htmlspecialchars($favorite['product_name']); ?></p>
-                                <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
+                <?php if (count($favorites) === 0): ?>
+                    <div class="no-data-message">아직 찜한 상품이 없습니다.</div>
+                <?php else: ?>
+                    <div class="favorites_list">
+                        <?php foreach ($favorites as $favorite): ?>
+                            <div class="favorite_item">
+                                <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
+                                <div class="favorite_details">
+                                    <p><?= htmlspecialchars($favorite['product_name']); ?></p>
+                                    <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
+                                </div>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- 포인트 섹션 -->
             <div class="points_section">
                 <h2 class="section_title">내 포인트</h2>
-                <?php
-                $query = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1');
-                $query->execute(['user_id' => $user_id]);
-                $current_point = $query->fetchColumn() ?? 0;
-                ?>
                 <div class="points_info">
                     <p>현재 포인트: <strong><?= htmlspecialchars(number_format($current_point)); ?>점</strong></p>
                 </div>
@@ -451,21 +437,23 @@ if (!$user) {
                     <button class="posts_tab active" data-tab="all">전체</button>
                     <button class="posts_tab" data-tab="review">리뷰</button>
                     <button class="posts_tab" data-tab="qna">Q&A</button>
+                    <?php if ($user['role'] === 'admin'): ?>
+                        <button class="posts_tab" data-tab="notice">공지사항</button>
+                    <?php endif; ?>
                 </div>
-                <div class="posts_list">
-                    <?php
-                    $query = $pdo->prepare('SELECT id, title, created_at, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
-                    $query->execute(['user_id' => $user_id]);
-                    $posts = $query->fetchAll(PDO::FETCH_ASSOC);
-                    ?>
-
-                    <?php foreach ($posts as $post): ?>
-                        <div class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>">
-                            <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
-                            <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                <?php if (count($posts) === 0): ?>
+                    <div class="no-data-message" style="margin-top:16px;">아직 작성한 게시물이 없습니다.</div>
+                <?php else: ?>
+                    <div class="posts_list">
+                        <?php foreach ($posts as $post): ?>
+                            <div class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>">
+                                <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
+                                <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="no-data-message posts_no_data hidden" style="margin-top:16px;">해당 게시물이 없습니다.</div>
+                <?php endif; ?>
             </div>
         </div>
     </main>
@@ -473,10 +461,12 @@ if (!$user) {
     <?php include("./Components/FooterComponents.php"); ?>
 
     <script>
-        // 탭 필터링 및 더보기 버튼 동작 구현
+        // 탭 필터링
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.posts_tab');
             const postItems = document.querySelectorAll('.post_item');
+            const postsList = document.querySelector('.posts_list');
+            const noDataMsg = document.querySelector('.posts_no_data');
 
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -485,13 +475,27 @@ if (!$user) {
                     tabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
 
+                    if (!postsList) return;
+                    if (postItems.length === 0) return;
+
+                    let hasVisible = false;
                     postItems.forEach(post => {
                         if (tabType === 'all' || post.dataset.postType === tabType) {
                             post.style.display = '';
+                            hasVisible = true;
                         } else {
                             post.style.display = 'none';
                         }
                     });
+
+                    // 게시물이 없는 경우 표시
+                    if (noDataMsg) {
+                        if (!hasVisible) {
+                            noDataMsg.classList.remove('hidden');
+                        } else {
+                            noDataMsg.classList.add('hidden');
+                        }
+                    }
                 });
             });
         });
