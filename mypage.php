@@ -19,7 +19,7 @@ if (!$user) {
     die('사용자 정보를 찾을 수 없습니다.');
 }
 
-// 주문 내역 조회 (product_id, status 포함)
+// 주문 내역 조회
 $orderQuery = $pdo->prepare('
     SELECT id, product_name, price, product_image, order_date, product_id, status
     FROM orders
@@ -29,7 +29,7 @@ $orderQuery = $pdo->prepare('
 $orderQuery->execute(['user_id' => $user_id]);
 $orders = $orderQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// 찜 목록 조회 (product_id 포함)
+// 찜 목록 조회
 $favQuery = $pdo->prepare('
     SELECT p.id AS product_id, p.product_name, p.product_image, p.price 
     FROM favorites f 
@@ -39,10 +39,15 @@ $favQuery = $pdo->prepare('
 $favQuery->execute(['user_id' => $user_id]);
 $favorites = $favQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// 포인트 조회
+// 포인트 조회 (현재 포인트)
 $pointQuery = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1');
 $pointQuery->execute(['user_id' => $user_id]);
 $current_point = $pointQuery->fetchColumn() ?? 0;
+
+// 포인트 내역 조회
+$pointHistoryQuery = $pdo->prepare('SELECT description, points, balance, created_at FROM points WHERE user_id = :user_id ORDER BY created_at DESC');
+$pointHistoryQuery->execute(['user_id' => $user_id]);
+$point_history = $pointHistoryQuery->fetchAll(PDO::FETCH_ASSOC);
 
 // 내가 작성한 게시물 조회
 $postQuery = $pdo->prepare('SELECT id, title, created_at, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
@@ -54,9 +59,9 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - 마이페이지</title>
     <link rel="stylesheet" href="./style.css">
+
     <style>
         body {
             background-color: #000;
@@ -230,6 +235,28 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
+        /* 포인트 히스토리 테이블 */
+        .points_history {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .points_history th,
+        .points_history td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #555;
+        }
+
+        .points_history th {
+            background-color: #333;
+        }
+
+        .points_history td {
+            background-color: #222;
+        }
+
         .posts_tabs {
             display: flex;
             gap: 16px;
@@ -352,7 +379,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
 
     <main>
         <div class="mypage_banner">마이 페이지</div>
-
         <div class="mypage_content">
             <!-- 프로필 섹션 -->
             <div class="profile_section">
@@ -368,7 +394,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <a href="./edit_profile.php" class="edit_profile_btn">프로필 수정</a>
             </div>
 
-            <!-- 주문 내역 섹션 -->
+            <!-- 주문 내역 -->
             <div class="orders_section">
                 <h2 class="section_title"><a href="orders.php">주문 내역</a></h2>
                 <?php if (count($orders) === 0): ?>
@@ -376,20 +402,13 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php else: ?>
                     <div class="orders_list">
                         <?php foreach ($orders as $order): ?>
-                            <?php
-                            // order_status.php 링크를 만들기 위해 order['id']가 있는지 체크
-                            $orderLink = '#';
-                            if (isset($order['id']) && $order['id'] !== null) {
-                                $orderLink = 'order_status.php?id=' . urlencode((string)$order['id']);
-                            }
-                            ?>
-                            <a class="order_item" href="<?= $orderLink ?>">
-                                <?php if (!empty($order['product_image'])): ?>
+                            <a class="order_item" href="order_status.php?id=<?= urlencode($order['id']); ?>">
+                                <?php if ($order['product_image']): ?>
                                     <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
                                 <?php endif; ?>
                                 <div class="order_details">
                                     <p><?= htmlspecialchars($order['product_name']); ?></p>
-                                    <p>가격: <?= htmlspecialchars(number_format($order['price'])); ?>원</p>
+                                    <p>가격: <?= number_format($order['price']); ?>원</p>
                                     <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
                                 </div>
                             </a>
@@ -398,7 +417,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </div>
 
-            <!-- 찜 목록 섹션 -->
+            <!-- 찜 목록 -->
             <div class="favorites_section">
                 <h2 class="section_title"><a href="favorites.php">찜 목록</a></h2>
                 <?php if (count($favorites) === 0): ?>
@@ -406,19 +425,13 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php else: ?>
                     <div class="favorites_list">
                         <?php foreach ($favorites as $favorite): ?>
-                            <?php
-                            $favoriteLink = '#';
-                            if (isset($favorite['product_id']) && $favorite['product_id'] !== null) {
-                                $favoriteLink = 'product_detail.php?id=' . urlencode((string)$favorite['product_id']);
-                            }
-                            ?>
-                            <a class="favorite_item" href="<?= $favoriteLink ?>">
-                                <?php if (!empty($favorite['product_image'])): ?>
+                            <a class="favorite_item" href="product_detail.php?id=<?= urlencode($favorite['product_id']); ?>">
+                                <?php if ($favorite['product_image']): ?>
                                     <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
                                 <?php endif; ?>
                                 <div class="favorite_details">
                                     <p><?= htmlspecialchars($favorite['product_name']); ?></p>
-                                    <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
+                                    <p>가격: <?= number_format($favorite['price']); ?>원</p>
                                 </div>
                             </a>
                         <?php endforeach; ?>
@@ -426,15 +439,42 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </div>
 
-            <!-- 포인트 섹션 -->
+            <!-- 포인트 -->
             <div class="points_section">
                 <h2 class="section_title">내 포인트</h2>
                 <div class="points_info">
-                    <p>현재 포인트: <strong><?= htmlspecialchars(number_format($current_point)); ?>점</strong></p>
+                    <p>현재 포인트: <strong><?= number_format($current_point); ?>점</strong></p>
                 </div>
+
+                <!-- 포인트 사용/적립 내역 -->
+                <h2 class="section_title">포인트 사용/적립 내역</h2>
+                <?php if (count($point_history) === 0): ?>
+                    <div class="no-data-message">포인트 사용/적립 내역이 없습니다.</div>
+                <?php else: ?>
+                    <table class="points_history">
+                        <thead>
+                            <tr>
+                                <th>일자</th>
+                                <th>내역</th>
+                                <th>변동 포인트</th>
+                                <th>잔액</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($point_history as $ph): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($ph['created_at']); ?></td>
+                                    <td><?= htmlspecialchars($ph['description']); ?></td>
+                                    <td><?= number_format($ph['points']); ?>점</td>
+                                    <td><?= number_format($ph['balance']); ?>점</td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
             </div>
 
-            <!-- 내가 작성한 게시물 섹션 -->
+            <!-- 내가 작성한 게시물 -->
             <div class="posts_section">
                 <h2 class="section_title">내가 작성한 게시물</h2>
                 <div class="posts_tabs">
@@ -450,7 +490,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php else: ?>
                     <div class="posts_list">
                         <?php foreach ($posts as $post): ?>
-                            <a class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>" href="board_view.php?id=<?= urlencode((string)$post['id']); ?>">
+                            <a class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>" href="board_view.php?id=<?= urlencode($post['id']); ?>">
                                 <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
                                 <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
                             </a>
@@ -465,40 +505,33 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
     <?php include("./Components/FooterComponents.php"); ?>
 
     <script>
-        // 탭 필터링
+        // 탭 필터 로직 동일
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.posts_tab');
-            const postItems = document.querySelectorAll('.post_item');
-            const postsList = document.querySelector('.posts_list');
+            const posts = document.querySelectorAll('.post_item');
             const noDataMsg = document.querySelector('.posts_no_data');
 
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    const tabType = tab.dataset.tab;
-
                     tabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
 
-                    if (!postsList) return;
-                    if (postItems.length === 0) return;
-
-                    let hasVisible = false;
-                    postItems.forEach(post => {
-                        if (tabType === 'all' || post.dataset.postType === tabType) {
-                            post.style.display = '';
-                            hasVisible = true;
+                    const filter = tab.dataset.tab;
+                    let visibleCount = 0;
+                    posts.forEach(post => {
+                        const type = post.dataset.postType;
+                        if (filter === 'all' || type === filter || (filter === 'notice' && type === 'notice')) {
+                            post.style.display = 'flex';
+                            visibleCount++;
                         } else {
                             post.style.display = 'none';
                         }
                     });
 
-                    // 게시물이 없는 경우 표시
-                    if (noDataMsg) {
-                        if (!hasVisible) {
-                            noDataMsg.classList.remove('hidden');
-                        } else {
-                            noDataMsg.classList.add('hidden');
-                        }
+                    if (visibleCount === 0) {
+                        noDataMsg.classList.remove('hidden');
+                    } else {
+                        noDataMsg.classList.add('hidden');
                     }
                 });
             });

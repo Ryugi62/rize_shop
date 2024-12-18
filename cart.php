@@ -18,6 +18,16 @@ $stmt = $pdo->prepare("
 $stmt->execute(['user_id' => $user_id]);
 $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// 찜하기 항목 가져오기
+$favStmt = $pdo->prepare("
+    SELECT f.id as favorite_id, f.product_id, p.product_name, p.product_image, p.price
+    FROM favorites f
+    JOIN products p ON f.product_id = p.id
+    WHERE f.user_id = :user_id
+");
+$favStmt->execute(['user_id' => $user_id]);
+$fav_items = $favStmt->fetchAll(PDO::FETCH_ASSOC);
+
 $total = 0;
 foreach ($cart_items as $item) {
     $total += $item['price'] * $item['quantity'];
@@ -71,6 +81,18 @@ foreach ($cart_items as $item) {
         .action-btn:hover {
             background: var(--main-hover);
         }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        }
     </style>
 </head>
 
@@ -78,6 +100,7 @@ foreach ($cart_items as $item) {
     <?php include("./Components/HeaderComponents.php"); ?>
     <div class="container">
         <h1>장바구니</h1>
+        <!-- 장바구니 상품 목록 -->
         <?php if (count($cart_items) === 0): ?>
             <p>장바구니에 상품이 없습니다.</p>
         <?php else: ?>
@@ -112,6 +135,38 @@ foreach ($cart_items as $item) {
                 <div style="margin-top:16px; display:flex; gap:10px; justify-content:flex-end;">
                     <button type="submit" class="action-btn">변경사항 적용</button>
                     <a href="checkout.php" class="action-btn">구매하기</a>
+                </div>
+            </form>
+        <?php endif; ?>
+
+        <!-- 찜한 상품 목록 -->
+        <h2 class="section-title">찜한 상품</h2>
+        <?php if (count($fav_items) === 0): ?>
+            <p>찜한 상품이 없습니다.</p>
+        <?php else: ?>
+            <form action="add_to_cart.php" method="post">
+                <table>
+                    <tr>
+                        <th>선택</th>
+                        <th>상품명</th>
+                        <th>이미지</th>
+                        <th>가격</th>
+                    </tr>
+                    <?php foreach ($fav_items as $fitem): ?>
+                        <tr>
+                            <td><input type="checkbox" name="favorite_ids[]" value="<?php echo $fitem['favorite_id']; ?>"></td>
+                            <td><?php echo htmlspecialchars($fitem['product_name']); ?></td>
+                            <td><img src="<?php echo htmlspecialchars($fitem['product_image']); ?>" alt="" width="50"></td>
+                            <td><?php echo number_format($fitem['price']); ?>원</td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+                <div style="margin-top:16px; text-align:right;">
+                    <form action="add_to_cart.php" method="post">
+                        <input type="hidden" name="product_id" value="123"> <!-- 상품 ID -->
+                        <input type="number" name="quantity" value="1" min="1">
+                        <button type="submit">장바구니에 담기</button>
+                    </form>
                 </div>
             </form>
         <?php endif; ?>

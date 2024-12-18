@@ -28,12 +28,6 @@ if (!$order) {
     die('해당 주문을 찾을 수 없거나 접근 권한이 없습니다.');
 }
 
-// 배송 정보 조회 (가상의 shipping 테이블)
-$shipping_stmt = $pdo->prepare('SELECT carrier_name, tracking_number, shipping_events FROM shipping WHERE order_id = :order_id');
-$shipping_stmt->execute(['order_id' => $order_id]);
-$shipping = $shipping_stmt->fetch(PDO::FETCH_ASSOC);
-
-// status에 따른 상태 텍스트
 $status_text = match ($order['status']) {
     'pending' => '주문 접수 중',
     'processing' => '상품 준비 중',
@@ -43,7 +37,11 @@ $status_text = match ($order['status']) {
     default => '알 수 없는 상태',
 };
 
-// 배송 이벤트 파싱 (JSON 형태라고 가정)
+// 배송 정보 조회
+$shipping_stmt = $pdo->prepare('SELECT carrier_name, tracking_number, shipping_events FROM shipping WHERE order_id = :order_id');
+$shipping_stmt->execute(['order_id' => $order_id]);
+$shipping = $shipping_stmt->fetch(PDO::FETCH_ASSOC);
+
 $events = [];
 if ($shipping && !empty($shipping['shipping_events'])) {
     $events = json_decode($shipping['shipping_events'], true);
@@ -51,8 +49,6 @@ if ($shipping && !empty($shipping['shipping_events'])) {
         $events = [];
     }
 }
-
-// 이벤트를 최신순으로 정렬 (필요하다면)
 usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
 ?>
 <!DOCTYPE html>
@@ -60,8 +56,7 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주문 상태 - 주문 #<?php echo htmlspecialchars($order['id']); ?></title>
+    <title>주문 상태 - 주문 #<?= htmlspecialchars($order['id']); ?></title>
     <link rel="stylesheet" href="./style.css">
     <style>
         body {
@@ -75,6 +70,7 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
             max-width: 1200px;
             margin: 40px auto;
             padding: 0 16px;
+            height: 100%;
         }
 
         .order_status_header {
@@ -168,6 +164,15 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
             background-color: #26d4c3;
         }
 
+        .notice_box {
+            background-color: #333;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 16px;
+        }
+
         .info_links {
             display: flex;
             gap: 8px;
@@ -183,41 +188,33 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
         .info_links a:hover {
             color: #2ef3e1;
         }
-
-        .notice_box {
-            background-color: #333;
-            border-radius: 8px;
-            padding: 16px;
-            font-size: 14px;
-            color: #ccc;
-            margin-top: 16px;
-        }
     </style>
+
 </head>
 
 <body>
     <?php include("./Components/HeaderComponents.php"); ?>
     <div class="order_status_container">
-        <h1 class="order_status_header">주문 #<?php echo htmlspecialchars($order['id']); ?> 상태</h1>
+        <h1 class="order_status_header">주문 #<?= htmlspecialchars($order['id']); ?> 상태</h1>
 
         <div class="order_info">
             <?php if (!empty($order['product_image'])): ?>
-                <img src="<?php echo htmlspecialchars($order['product_image']); ?>" alt="<?php echo htmlspecialchars($order['product_name']); ?>">
+                <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
             <?php endif; ?>
             <div class="order_details">
-                <p><strong>상품명:</strong> <?php echo htmlspecialchars($order['product_name']); ?></p>
-                <p><strong>가격:</strong> <?php echo htmlspecialchars(number_format($order['price'])); ?>원</p>
-                <p><strong>주문일:</strong> <?php echo htmlspecialchars($order['order_date']); ?></p>
-                <p class="status_text">현재 상태: <?php echo htmlspecialchars($status_text); ?></p>
+                <p><strong>상품명:</strong> <?= htmlspecialchars($order['product_name']); ?></p>
+                <p><strong>가격:</strong> <?= number_format($order['price']); ?>원</p>
+                <p><strong>주문일:</strong> <?= htmlspecialchars($order['order_date']); ?></p>
+                <p class="status_text">현재 상태: <?= htmlspecialchars($status_text); ?></p>
             </div>
         </div>
 
         <?php if ($shipping): ?>
             <div class="shipping_info">
                 <div class="shipping_header">
-                    <h2><?php echo htmlspecialchars($shipping['carrier_name']); ?> 배송 조회</h2>
+                    <h2><?= htmlspecialchars($shipping['carrier_name']); ?> 배송 조회</h2>
                     <div>
-                        <p><strong>송장 번호:</strong> <?php echo htmlspecialchars($shipping['tracking_number']); ?></p>
+                        <p><strong>송장 번호:</strong> <?= htmlspecialchars($shipping['tracking_number']); ?></p>
                     </div>
                 </div>
                 <div class="info_links">
@@ -227,18 +224,14 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
                 <div class="shipping_events">
                     <?php foreach ($events as $event): ?>
                         <div class="shipping_event">
-                            <strong><?php echo htmlspecialchars($event['location']); ?></strong>
-                            <span><?php echo htmlspecialchars($event['date']); ?></span>
+                            <strong><?= htmlspecialchars($event['location']); ?></strong>
+                            <span><?= htmlspecialchars($event['date']); ?></span>
                         </div>
                     <?php endforeach; ?>
                 </div>
-
                 <div class="notice_box">
-                    • 배송 추적 서비스를 통해 제공받는 정보로 실 배송 현황과 차이가 있을 수 있습니다.<br>니
-                    일반 배송 상품은 언제 배송되나요?<br>
-                    배송 완료 상품을 받지 못했어요.<br>
-                    배송 조회는 어떻게 하나요?<br>
-                    주문제작 상품은 언제 배송 되나요?
+                    • 배송 추적 정보는 실제와 차이가 있을 수 있습니다.<br>
+                    배송 관련 FAQ 등을 여기에 기재
                 </div>
             </div>
         <?php else: ?>

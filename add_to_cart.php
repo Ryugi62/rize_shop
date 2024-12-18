@@ -29,7 +29,7 @@ if ($stmt->rowCount() === 0) {
 $check = $pdo->prepare("SELECT id, quantity FROM cart WHERE user_id=:user_id AND product_id=:product_id");
 $check->execute(['user_id' => $user_id, 'product_id' => $product_id]);
 if ($check->rowCount() > 0) {
-    // 이미 장바구니에 있으면 수량만 증가
+    // 이미 장바구니에 있으면 수량 증가
     $row = $check->fetch(PDO::FETCH_ASSOC);
     $newQty = $row['quantity'] + $quantity;
     $update = $pdo->prepare("UPDATE cart SET quantity=:qty WHERE id=:id");
