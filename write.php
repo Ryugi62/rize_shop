@@ -16,16 +16,16 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <style>
         .write_view {
-            margin-top: 60px;
+            height: auto;
             width: 100%;
-            max-width: 800px;
-            background-color: var(--light-black);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             color: var(--white);
+            padding: 40px;
             margin-left: auto;
+            margin-top: 60px;
             margin-right: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            background-color: var(--light-black);
         }
 
         .write_view h2 {
@@ -36,6 +36,7 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
         }
 
         .write_form {
+            width: 100%;
             display: flex;
             flex-direction: column;
         }
@@ -55,6 +56,7 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
             background-color: var(--black);
             color: var(--white);
             font-size: 16px;
+            width: 100%;
         }
 
         .write_form textarea {
@@ -71,6 +73,7 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
         }
 
         .write_form button {
+            margin-top: 10px;
             align-self: flex-end;
             padding: 12px 24px;
             background-color: var(--main);
@@ -90,6 +93,23 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
         .write_form button:active {
             background-color: var(--main-active);
             color: var(--black-active);
+        }
+
+        .write_form textarea {
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 1px solid var(--gray);
+            border-radius: 6px;
+            background-color: var(--black);
+            color: var(--white);
+            font-size: 16px;
+            resize: vertical;
+            min-height: 500px;
+            /* 변경된 부분 */
+        }
+
+        .ck-editor__editable {
+            min-height: 500px;
         }
     </style>
 </head>

@@ -57,7 +57,6 @@ if ($id > 0) {
         .edit_view {
             margin-top: 60px;
             width: 100%;
-            max-width: 800px;
             background-color: var(--light-black);
             padding: 40px;
             border-radius: 12px;
@@ -65,6 +64,7 @@ if ($id > 0) {
             color: var(--white);
             margin-left: auto;
             margin-right: auto;
+            height: auto;
         }
 
         .edit_view h2 {
@@ -75,6 +75,7 @@ if ($id > 0) {
         }
 
         .edit_form {
+            width: 100%;
             display: flex;
             flex-direction: column;
         }
@@ -118,6 +119,7 @@ if ($id > 0) {
             cursor: pointer;
             font-size: 18px;
             transition: background-color 0.3s, color 0.3s;
+            margin-top: 10px;
         }
 
         .edit_form button:hover {
@@ -128,6 +130,24 @@ if ($id > 0) {
         .edit_form button:active {
             background-color: var(--main-active);
             color: var(--black-active);
+        }
+
+
+        .write_form textarea {
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 1px solid var(--gray);
+            border-radius: 6px;
+            background-color: var(--black);
+            color: var(--white);
+            font-size: 16px;
+            resize: vertical;
+            min-height: 500px;
+            /* 변경된 부분 */
+        }
+
+        .ck-editor__editable {
+            min-height: 500px;
         }
     </style>
 </head>

@@ -33,6 +33,10 @@ try {
     $stmt->execute();
 
     echo json_encode(["success" => "게시글이 성공적으로 작성되었습니다."]);
+
+    // /board.php 페이지로 이동
+    header("Location: /board.php");
 } catch (PDOException $e) {
     echo json_encode(["error" => "게시글 작성 중 오류가 발생했습니다: " . $e->getMessage()]);
+    echo "<script>history.back();</script>";
 }
