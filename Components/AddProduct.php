@@ -6,15 +6,14 @@ include('./config/db.php');
 
 // 상품 추가 처리
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
-    // 입력값 검증 및 정리
     $name = trim($_POST['name']);
     $price_str = trim($_POST['price']);
-    $description = $_POST['description']; // CKEditor5 HTML
+    $description = $_POST['description']; // CKEditor로 입력한 HTML
+    $stock_str = trim($_POST['stock']);
 
-    // 가격에서 숫자만 추출하여 정수로 변환
     $price = (int)preg_replace('/[^0-9]/', '', $price_str);
+    $stock = (int)preg_replace('/[^0-9]/', '', $stock_str);
 
-    // 이미지 업로드 처리
     $upload_dir = './assets/images/';
     $default_image = './assets/images/default.png';
     $image_path = $default_image;
@@ -39,18 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     }
 
     if (empty($error)) {
-        if ($name === '' || $price === 0) {
-            $error = "모든 필드를 올바르게 입력해주세요.";
+        if ($name === '' || $price === 0 || $stock < 0) {
+            $error = "모든 필드를 올바르게 입력해주세요 (가격은 숫자, 재고는 0 이상의 숫자).";
         } else {
             $stmt = $pdo->prepare("
                 INSERT INTO products (product_name, product_image, price, description, rating, reviews, stock) 
-                VALUES (:product_name, :product_image, :price, :description, 0, 0, 0)
+                VALUES (:product_name, :product_image, :price, :description, 0, 0, :stock)
             ");
             $success_insert = $stmt->execute([
                 'product_name' => $name,
                 'product_image' => $image_path,
                 'price' => $price,
-                'description' => $description
+                'description' => $description,
+                'stock' => $stock
             ]);
 
             if ($success_insert) {
@@ -97,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
         }
 
         .form_group input[type="text"],
+        .form_group input[type="number"],
         .form_group textarea,
         .form_group input[type="file"] {
             background-color: var(--black);
@@ -108,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
         }
 
         .form_group textarea {
-            min-height: 500px;
+            min-height: 300px;
         }
 
         button[name="add_product"] {
@@ -151,7 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
             <p class="success_msg"><?php echo htmlspecialchars($success); ?></p>
         <?php endif; ?>
 
-        <!-- 상품 추가 폼 -->
         <form action="admin.php?mode=add_product" method="POST" enctype="multipart/form-data">
             <div class="form_group">
                 <label for="name">상품 이름:</label>
@@ -160,6 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
             <div class="form_group">
                 <label for="price">가격 (숫자만 입력):</label>
                 <input type="text" id="price" name="price" required>
+            </div>
+            <div class="form_group">
+                <label for="stock">재고 수량:</label>
+                <input type="number" id="stock" name="stock" required min="0" value="0">
             </div>
             <div class="form_group">
                 <label for="image_file">상품 이미지 첨부:</label>
@@ -177,9 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     <script>
         ClassicEditor
             .create(document.querySelector('#description'))
-            .then(editor => {
-                // 에디터 로드 후에도 min-height는 CSS에서 관리 중
-            })
+            .then(editor => {})
             .catch(error => {
                 console.error(error);
             });

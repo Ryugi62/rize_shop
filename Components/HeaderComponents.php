@@ -38,16 +38,9 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin'; // 관리�
 </header>
 
 <script>
-    // 현재 페이지의 경로를 가져옵니다.
     const path = window.location.pathname === "/" ? "/index.php" : window.location.pathname;
-
-    // 쿼리 파라미터를 제거하고, 파일 이름만 추출
     const page = path.split("/").pop().split("?")[0];
-
-    // active 클래스를 추가할 메뉴 항목을 찾습니다.
     const active_menu = document.querySelector(`.${page.split(".")[0]}_menu`);
-
-    // active 메뉴가 있으면 클래스를 추가하고, 없으면 기본 메뉴(메인)에 active 클래스를 추가합니다.
     if (active_menu) {
         active_menu.querySelector("a").classList.add("active");
     }

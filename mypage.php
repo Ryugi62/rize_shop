@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// 사용자 정보 가져오기 (role 포함)
+// 사용자 정보 가져오기
 $query = $pdo->prepare('SELECT username, email, created_at, role FROM users WHERE id = :user_id');
 $query->execute(['user_id' => $user_id]);
 $user = $query->fetch(PDO::FETCH_ASSOC);
@@ -19,14 +19,19 @@ if (!$user) {
     die('사용자 정보를 찾을 수 없습니다.');
 }
 
-// 주문 내역 조회
-$orderQuery = $pdo->prepare('SELECT product_name, price, product_image, order_date FROM orders WHERE user_id = :user_id ORDER BY order_date DESC');
+// 주문 내역 조회 (product_id, status 포함)
+$orderQuery = $pdo->prepare('
+    SELECT id, product_name, price, product_image, order_date, product_id, status
+    FROM orders
+    WHERE user_id = :user_id
+    ORDER BY order_date DESC
+');
 $orderQuery->execute(['user_id' => $user_id]);
 $orders = $orderQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// 찜 목록 조회
+// 찜 목록 조회 (product_id 포함)
 $favQuery = $pdo->prepare('
-    SELECT p.product_name, p.product_image, p.price 
+    SELECT p.id AS product_id, p.product_name, p.product_image, p.price 
     FROM favorites f 
     INNER JOIN products p ON f.product_id = p.id 
     WHERE f.user_id = :user_id
@@ -39,7 +44,7 @@ $pointQuery = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id
 $pointQuery->execute(['user_id' => $user_id]);
 $current_point = $pointQuery->fetchColumn() ?? 0;
 
-// 내가 작성한 게시물 (review, qna, notice)
+// 내가 작성한 게시물 조회
 $postQuery = $pdo->prepare('SELECT id, title, created_at, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
 $postQuery->execute(['user_id' => $user_id]);
 $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
@@ -52,7 +57,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - 마이페이지</title>
     <link rel="stylesheet" href="./style.css">
-
     <style>
         body {
             background-color: #000;
@@ -81,7 +85,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
         }
 
         .mypage_banner {
-            position: relative;
             width: 100%;
             height: 300px;
             background-size: cover;
@@ -113,6 +116,10 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 16px;
             border-bottom: 1px solid var(--light-gray);
             padding-bottom: 8px;
+        }
+
+        .section_title a {
+            color: var(--white);
         }
 
         .profile_section {
@@ -213,12 +220,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             text-align: center;
         }
 
-        .points_section {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
         .points_info {
             background-color: var(--light-black);
             padding: 16px;
@@ -227,12 +228,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .posts_section {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
         }
 
         .posts_tabs {
@@ -301,11 +296,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             white-space: nowrap;
         }
 
-        .post_content {
-            font-size: 16px;
-            color: var(--white);
-        }
-
         .no-data-message {
             text-align: center;
             font-size: 18px;
@@ -361,10 +351,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
     <?php include("./Components/HeaderComponents.php"); ?>
 
     <main>
-        <!-- 마이페이지 배너 -->
-        <div class="mypage_banner">
-            마이 페이지
-        </div>
+        <div class="mypage_banner">마이 페이지</div>
 
         <div class="mypage_content">
             <!-- 프로필 섹션 -->
@@ -383,20 +370,29 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
 
             <!-- 주문 내역 섹션 -->
             <div class="orders_section">
-                <h2 class="section_title">주문 내역</h2>
+                <h2 class="section_title"><a href="orders.php">주문 내역</a></h2>
                 <?php if (count($orders) === 0): ?>
                     <div class="no-data-message">아직 주문 내역이 없습니다.</div>
                 <?php else: ?>
                     <div class="orders_list">
                         <?php foreach ($orders as $order): ?>
-                            <div class="order_item">
-                                <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
+                            <?php
+                            // order_status.php 링크를 만들기 위해 order['id']가 있는지 체크
+                            $orderLink = '#';
+                            if (isset($order['id']) && $order['id'] !== null) {
+                                $orderLink = 'order_status.php?id=' . urlencode((string)$order['id']);
+                            }
+                            ?>
+                            <a class="order_item" href="<?= $orderLink ?>">
+                                <?php if (!empty($order['product_image'])): ?>
+                                    <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
+                                <?php endif; ?>
                                 <div class="order_details">
                                     <p><?= htmlspecialchars($order['product_name']); ?></p>
                                     <p>가격: <?= htmlspecialchars(number_format($order['price'])); ?>원</p>
                                     <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
                                 </div>
-                            </div>
+                            </a>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -404,19 +400,27 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
 
             <!-- 찜 목록 섹션 -->
             <div class="favorites_section">
-                <h2 class="section_title">찜 목록</h2>
+                <h2 class="section_title"><a href="favorites.php">찜 목록</a></h2>
                 <?php if (count($favorites) === 0): ?>
                     <div class="no-data-message">아직 찜한 상품이 없습니다.</div>
                 <?php else: ?>
                     <div class="favorites_list">
                         <?php foreach ($favorites as $favorite): ?>
-                            <div class="favorite_item">
-                                <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
+                            <?php
+                            $favoriteLink = '#';
+                            if (isset($favorite['product_id']) && $favorite['product_id'] !== null) {
+                                $favoriteLink = 'product_detail.php?id=' . urlencode((string)$favorite['product_id']);
+                            }
+                            ?>
+                            <a class="favorite_item" href="<?= $favoriteLink ?>">
+                                <?php if (!empty($favorite['product_image'])): ?>
+                                    <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
+                                <?php endif; ?>
                                 <div class="favorite_details">
                                     <p><?= htmlspecialchars($favorite['product_name']); ?></p>
                                     <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
                                 </div>
-                            </div>
+                            </a>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -446,10 +450,10 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php else: ?>
                     <div class="posts_list">
                         <?php foreach ($posts as $post): ?>
-                            <div class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>">
+                            <a class="post_item" data-post-type="<?= htmlspecialchars($post['post_type']); ?>" href="board_view.php?id=<?= urlencode((string)$post['id']); ?>">
                                 <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
                                 <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
-                            </div>
+                            </a>
                         <?php endforeach; ?>
                     </div>
                     <div class="no-data-message posts_no_data hidden" style="margin-top:16px;">해당 게시물이 없습니다.</div>
