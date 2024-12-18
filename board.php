@@ -14,26 +14,55 @@ if ($mode && !in_array($mode, $valid_modes)) {
     $mode = '';
 }
 
+// 페이징을 위한 변수 설정
+$limit = 10; // 페이지당 게시물 수
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+
 // 게시물 조회 쿼리
 if ($mode) {
+    // 현재 모드에 해당하는 게시물 수
+    $count_sql = "SELECT COUNT(*) FROM posts WHERE post_type = :post_type";
+    $count_stmt = $pdo->prepare($count_sql);
+    $count_stmt->execute([':post_type' => $mode]);
+    $total_posts = $count_stmt->fetchColumn();
+
+    // 페이지당 게시물 수 만큼 조회
     $sql = "SELECT p.id, u.username, p.post_type, p.title, p.content, p.created_at, p.view 
             FROM posts p
             JOIN users u ON p.user_id = u.id
             WHERE p.post_type = :post_type
-            ORDER BY p.created_at DESC";
+            ORDER BY p.created_at DESC
+            LIMIT :limit OFFSET :offset";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([':post_type' => $mode]);
+    $stmt->bindValue(':post_type', $mode, PDO::PARAM_STR);
+    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+    $stmt->execute();
 } else {
-    // 전체 게시물 조회
+    // 전체 게시물 수
+    $count_sql = "SELECT COUNT(*) FROM posts";
+    $count_stmt = $pdo->query($count_sql);
+    $total_posts = $count_stmt->fetchColumn();
+
+    // 페이지당 게시물 수 만큼 조회
     $sql = "SELECT p.id, u.username, p.post_type, p.title, p.content, p.created_at, p.view 
             FROM posts p
             JOIN users u ON p.user_id = u.id
-            ORDER BY p.created_at DESC";
-    $stmt = $pdo->query($sql);
+            ORDER BY p.created_at DESC
+            LIMIT :limit OFFSET :offset";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+    $stmt->execute();
 }
 
 $posts = $stmt->fetchAll();
+
+// 전체 페이지 수 계산
+$total_pages = ceil($total_posts / $limit);
 ?>
+
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -148,6 +177,7 @@ $posts = $stmt->fetchAll();
             justify-content: center;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .navigation a {
@@ -170,7 +200,7 @@ $posts = $stmt->fetchAll();
             color: var(--black);
         }
 
-        .navigation a.active {
+        .navigation a.active_page {
             background-color: var(--white);
             color: var(--black);
             font-weight: bold;
@@ -212,10 +242,10 @@ $posts = $stmt->fetchAll();
                 <a href="./write.php" class="write_button">글쓰기</a>
             </div>
             <div class="board_mode">
-                <a href="./board.php" class="<?= ($mode === '') ? 'active' : '' ?>">전체</a>
-                <a href="./board.php?mode=notice" class="<?= ($mode === 'notice') ? 'active' : '' ?>">공지사항</a>
-                <a href="./board.php?mode=review" class="<?= ($mode === 'review') ? 'active' : '' ?>">리뷰</a>
-                <a href="./board.php?mode=qna" class="<?= ($mode === 'qna') ? 'active' : '' ?>">Q & A</a>
+                <a href="./board.php<?= $mode === '' ? '' : '?mode=' . htmlspecialchars($mode) ?>" class="<?= ($mode === '') ? 'active' : '' ?>">전체</a>
+                <a href="./board.php?mode=notice<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'notice') ? 'active' : '' ?>">공지사항</a>
+                <a href="./board.php?mode=review<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'review') ? 'active' : '' ?>">리뷰</a>
+                <a href="./board.php?mode=qna<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'qna') ? 'active' : '' ?>">Q & A</a>
             </div>
             <div class="table_box">
                 <table>
@@ -248,17 +278,53 @@ $posts = $stmt->fetchAll();
                 </table>
             </div>
 
-            <!-- 네비게이션 (페이징 기능은 추가하지 않았습니다) -->
-            <div class="navigation">
-                <!-- 페이징 기능을 구현하려면 추가적인 코드가 필요합니다 -->
-                <a href="#" title="처음">⏮</a>
-                <a href="#" title="이전">◀</a>
-                <a href="#" class="active" title="1페이지">1</a>
-                <a href="#" title="2페이지">2</a>
-                <a href="#" title="3페이지">3</a>
-                <a href="#" title="다음">▶</a>
-                <a href="#" title="끝">⏭</a>
-            </div>
+            <!-- 네비게이션 (페이징 기능) -->
+            <?php if ($total_pages > 1): ?>
+                <div class="navigation">
+                    <!-- 처음 페이지로 -->
+                    <?php if ($page > 1): ?>
+                        <a href="<?= './board.php' . ($mode ? '?mode=' . htmlspecialchars($mode) . '&' : '?') . 'page=1' ?>" title="처음">⏮</a>
+                    <?php else: ?>
+                        <a href="#" title="처음" style="pointer-events: none; opacity: 0.5;">⏮</a>
+                    <?php endif; ?>
+
+                    <!-- 이전 페이지로 -->
+                    <?php if ($page > 1): ?>
+                        <a href="<?= './board.php' . ($mode ? '?mode=' . htmlspecialchars($mode) . '&' : '?') . 'page=' . ($page - 1) ?>" title="이전">◀</a>
+                    <?php else: ?>
+                        <a href="#" title="이전" style="pointer-events: none; opacity: 0.5;">◀</a>
+                    <?php endif; ?>
+
+                    <!-- 페이지 번호 -->
+                    <?php
+                    // 페이지 번호 표시 범위 설정
+                    $range = 2; // 현재 페이지를 기준으로 좌우로 표시할 페이지 수
+                    $start = max(1, $page - $range);
+                    $end = min($total_pages, $page + $range);
+
+                    for ($i = $start; $i <= $end; $i++): ?>
+                        <?php if ($i == $page): ?>
+                            <a href="#" class="active_page"><?= $i ?></a>
+                        <?php else: ?>
+                            <a href="<?= './board.php' . ($mode ? '?mode=' . htmlspecialchars($mode) . '&' : '?') . 'page=' . $i ?>"><?= $i ?></a>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+
+                    <!-- 다음 페이지로 -->
+                    <?php if ($page < $total_pages): ?>
+                        <a href="<?= './board.php' . ($mode ? '?mode=' . htmlspecialchars($mode) . '&' : '?') . 'page=' . ($page + 1) ?>" title="다음">▶</a>
+                    <?php else: ?>
+                        <a href="#" title="다음" style="pointer-events: none; opacity: 0.5;">▶</a>
+                    <?php endif; ?>
+
+                    <!-- 마지막 페이지로 -->
+                    <?php if ($page < $total_pages): ?>
+                        <a href="<?= './board.php' . ($mode ? '?mode=' . htmlspecialchars($mode) . '&' : '?') . 'page=' . $total_pages ?>" title="끝">⏭</a>
+                    <?php else: ?>
+                        <a href="#" title="끝" style="pointer-events: none; opacity: 0.5;">⏭</a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </main>
 

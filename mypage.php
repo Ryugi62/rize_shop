@@ -2,6 +2,22 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+include('./config/db.php');
+
+if (!isset($_SESSION['user_id'])) {
+    die('로그인이 필요합니다.');
+}
+
+$user_id = $_SESSION['user_id'];
+
+// 사용자 정보 가져오기
+$query = $pdo->prepare('SELECT username, email, created_at FROM users WHERE id = :user_id');
+$query->execute(['user_id' => $user_id]);
+$user = $query->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    die('사용자 정보를 찾을 수 없습니다.');
+}
 ?>
 
 <!DOCTYPE html>
@@ -12,6 +28,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - 마이페이지</title>
     <link rel="stylesheet" href="./style.css">
+    <!-- 스타일은 기존 코드에서 유지 -->
     <style>
         /* 마이페이지 배너 */
         .mypage_banner {
@@ -28,6 +45,8 @@ if (session_status() === PHP_SESSION_NONE) {
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
             margin-bottom: 40px;
+            background-image: url('./assets/images/main_banner.jpg');
+            /* 배너 이미지 추가 */
         }
 
         /* 마이페이지 콘텐츠 */
@@ -85,6 +104,8 @@ if (session_status() === PHP_SESSION_NONE) {
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .edit_profile_btn:hover {
@@ -116,8 +137,17 @@ if (session_status() === PHP_SESSION_NONE) {
             padding: 16px;
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             gap: 12px;
             align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .order_item:hover,
+        .favorite_item:hover,
+        .post_item:hover {
+            background-color: var(--light-gray);
         }
 
         .order_item img,
@@ -133,6 +163,8 @@ if (session_status() === PHP_SESSION_NONE) {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            width: 100%;
+            text-align: center;
         }
 
         /* 포인트 섹션 */
@@ -204,6 +236,7 @@ if (session_status() === PHP_SESSION_NONE) {
             background-color: var(--black);
             border: none;
             border-radius: 4px 4px 0 0;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .posts_tab.active {
@@ -227,9 +260,12 @@ if (session_status() === PHP_SESSION_NONE) {
             padding: 16px;
             border-radius: 8px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 8px;
             cursor: pointer;
+            transition: background-color 0.3s;
+            justify-content: space-between;
+            width: 100%;
         }
 
         .post_item:hover {
@@ -240,11 +276,15 @@ if (session_status() === PHP_SESSION_NONE) {
             font-size: 18px;
             font-weight: bold;
             color: var(--white);
+            text-align: left;
+            flex: 1;
         }
 
         .post_date {
             font-size: 14px;
             color: var(--gray);
+            margin-left: 16px;
+            white-space: nowrap;
         }
 
         .post_content {
@@ -263,6 +303,7 @@ if (session_status() === PHP_SESSION_NONE) {
             cursor: pointer;
             font-size: 16px;
             align-self: center;
+            transition: background-color 0.3s;
         }
 
         .load_more_btn:hover {
@@ -279,8 +320,7 @@ if (session_status() === PHP_SESSION_NONE) {
             .order_item,
             .favorite_item,
             .post_item {
-                flex-direction: column;
-                align-items: flex-start;
+                align-items: center;
             }
 
             .order_item img,
@@ -298,6 +338,15 @@ if (session_status() === PHP_SESSION_NONE) {
                 text-align: center;
                 border-radius: 4px;
             }
+
+            .post_item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .post_date {
+                margin-left: 0;
+            }
         }
 
         /* 숨김 클래스 */
@@ -309,28 +358,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 <body>
     <?php include("./Components/HeaderComponents.php"); ?>
-
-    <?php
-    // 리뷰와 Q&A 데이터를 미리 정의합니다.
-    $reviews = array(
-        array('title' => '훌륭한 후디!', 'date' => '2024-11-25', 'content' => '이 후디는 정말 편안하고 스타일리시해요. 색상도 예쁘고 품질도 좋아서 매우 만족합니다.'),
-        array('title' => '배송이 빨라요', 'date' => '2024-10-30', 'content' => '주문한 지 하루 만에 상품을 받아볼 수 있어서 좋았습니다. 포장도 꼼꼼하게 되어 있었습니다.'),
-        array('title' => '사이즈가 조금 작아요', 'date' => '2024-09-15', 'content' => '디자인은 마음에 들지만, 사이즈가 조금 작아서 아쉽네요. 다음 번에는 한 사이즈 크게 주문할 생각입니다.'),
-        array('title' => '색상이 다양해서 좋아요', 'date' => '2024-08-10', 'content' => '다양한 색상이 있어서 선택의 폭이 넓어 좋았습니다. 앞으로도 다양한 색상 출시 부탁드립니다.'),
-        array('title' => '친절한 고객 서비스', 'date' => '2024-07-05', 'content' => '문의사항에 빠르게 답변해주셔서 감사했습니다. 앞으로도 잘 부탁드립니다.'),
-    );
-
-    $qna = array(
-        array('title' => '사이즈 문의', 'date' => '2024-11-10', 'content' => '이 후디의 정확한 사이즈 정보를 알고 싶습니다. S 사이즈가 어떤 치수인지요?'),
-        array('title' => '색상 옵션', 'date' => '2024-10-05', 'content' => '후디의 다른 색상 옵션이 있나요? 현재 사이트에 보이지 않아서요.'),
-        array('title' => '배송비 정책', 'date' => '2024-09-20', 'content' => '주문 금액이 일정 금액 이상일 경우 배송비가 무료인가요? 확인 부탁드립니다.'),
-        array('title' => '교환/반품 절차', 'date' => '2024-08-15', 'content' => '상품에 이상이 있을 경우 교환이나 반품 절차는 어떻게 되나요?'),
-        array('title' => '상품 재입고 문의', 'date' => '2024-07-25', 'content' => '인기 상품이 품절된 경우 재입고 예정이 있나요?'),
-    );
-
-    // 전체 게시물 합치기
-    $all_posts = array_merge($reviews, $qna);
-    ?>
 
     <main>
         <!-- 마이페이지 배너 -->
@@ -345,12 +372,12 @@ if (session_status() === PHP_SESSION_NONE) {
                 <div class="profile_info">
                     <img src="./assets/images/profile_default.png" alt="프로필 사진"> <!-- 기본 프로필 이미지 -->
                     <div class="profile_details">
-                        <p>이름: 홍길동</p>
-                        <p>이메일: honggildong@example.com</p>
-                        <p>가입일: 2023-01-15</p>
+                        <p>이름: <?= htmlspecialchars($user['username']); ?></p>
+                        <p>이메일: <?= htmlspecialchars($user['email']); ?></p>
+                        <p>가입일: <?= htmlspecialchars($user['created_at']); ?></p>
                     </div>
                 </div>
-                <button class="edit_profile_btn">프로필 수정</button>
+                <a href="./edit_profile.php" class="edit_profile_btn">프로필 수정</a>
             </div>
 
             <!-- 주문 내역 섹션 -->
@@ -358,32 +385,27 @@ if (session_status() === PHP_SESSION_NONE) {
                 <h2 class="section_title">주문 내역</h2>
                 <div class="orders_list">
                     <?php
-                    // 예시 데이터 - 실제 구현 시 데이터베이스에서 불러와야 함
-                    $orders = array(
-                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품1', 'price' => '₩50,000', 'date' => '2024-11-20'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품2', 'price' => '₩60,000', 'date' => '2024-10-15'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품3', 'price' => '₩55,000', 'date' => '2024-09-10'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품4', 'price' => '₩70,000', 'date' => '2024-08-05'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '주문 상품5', 'price' => '₩80,000', 'date' => '2024-07-22'),
-                    );
-
-                    foreach ($orders as $index => $order) {
-                        // 초기에는 4개만 보이고, 그 이후는 숨김
-                        $display_class = ($index < 4) ? '' : ' hidden';
+                    $query = $pdo->prepare('SELECT product_name, price, product_image, order_date FROM orders WHERE user_id = :user_id ORDER BY order_date DESC');
+                    $query->execute(['user_id' => $user_id]);
+                    $orders = $query->fetchAll(PDO::FETCH_ASSOC);
+                    $orders_total = count($orders);
+                    $orders_display_limit = 4;
                     ?>
-                        <div class="order_item<?php echo $display_class; ?>">
-                            <img src="<?php echo $order['image']; ?>" alt="<?php echo htmlspecialchars($order['name']); ?>">
+
+                    <?php foreach ($orders as $index => $order) {
+                        $display_class = ($index < $orders_display_limit) ? '' : ' hidden';
+                    ?>
+                        <div class="order_item<?= $display_class; ?>">
+                            <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
                             <div class="order_details">
-                                <p><?php echo htmlspecialchars($order['name']); ?></p>
-                                <p>가격: <?php echo htmlspecialchars($order['price']); ?></p>
-                                <p>주문일: <?php echo htmlspecialchars($order['date']); ?></p>
+                                <p><?= htmlspecialchars($order['product_name']); ?></p>
+                                <p>가격: <?= htmlspecialchars(number_format($order['price'])); ?>원</p>
+                                <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
                             </div>
                         </div>
-                    <?php
-                    }
-                    ?>
+                    <?php } ?>
                 </div>
-                <?php if (count($orders) > 4) { ?>
+                <?php if ($orders_total > $orders_display_limit) { ?>
                     <button class="load_more_btn" data-section="orders">더보기</button>
                 <?php } ?>
             </div>
@@ -393,31 +415,26 @@ if (session_status() === PHP_SESSION_NONE) {
                 <h2 class="section_title">찜 목록</h2>
                 <div class="favorites_list">
                     <?php
-                    // 예시 데이터 - 실제 구현 시 데이터베이스에서 불러와야 함
-                    $favorites = array(
-                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품1', 'price' => '₩70,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품2', 'price' => '₩80,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품3', 'price' => '₩90,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품4', 'price' => '₩100,000'),
-                        array('image' => './assets/images/hoodie1.png', 'name' => '찜 상품5', 'price' => '₩110,000'),
-                    );
-
-                    foreach ($favorites as $index => $favorite) {
-                        // 초기에는 4개만 보이고, 그 이후는 숨김
-                        $display_class = ($index < 4) ? '' : ' hidden';
+                    $query = $pdo->prepare('SELECT product_name, price, product_image FROM favorites WHERE user_id = :user_id');
+                    $query->execute(['user_id' => $user_id]);
+                    $favorites = $query->fetchAll(PDO::FETCH_ASSOC);
+                    $favorites_total = count($favorites);
+                    $favorites_display_limit = 4;
                     ?>
-                        <div class="favorite_item<?php echo $display_class; ?>">
-                            <img src="<?php echo $favorite['image']; ?>" alt="<?php echo htmlspecialchars($favorite['name']); ?>">
+
+                    <?php foreach ($favorites as $index => $favorite) {
+                        $display_class = ($index < $favorites_display_limit) ? '' : ' hidden';
+                    ?>
+                        <div class="favorite_item<?= $display_class; ?>">
+                            <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
                             <div class="favorite_details">
-                                <p><?php echo htmlspecialchars($favorite['name']); ?></p>
-                                <p>가격: <?php echo htmlspecialchars($favorite['price']); ?></p>
+                                <p><?= htmlspecialchars($favorite['product_name']); ?></p>
+                                <p>가격: <?= htmlspecialchars(number_format($favorite['price'])); ?>원</p>
                             </div>
                         </div>
-                    <?php
-                    }
-                    ?>
+                    <?php } ?>
                 </div>
-                <?php if (count($favorites) > 4) { ?>
+                <?php if ($favorites_total > $favorites_display_limit) { ?>
                     <button class="load_more_btn" data-section="favorites">더보기</button>
                 <?php } ?>
             </div>
@@ -425,8 +442,14 @@ if (session_status() === PHP_SESSION_NONE) {
             <!-- 포인트 섹션 -->
             <div class="points_section">
                 <h2 class="section_title">내 포인트</h2>
+                <?php
+                // 현재 포인트 계산
+                $query = $pdo->prepare('SELECT balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1');
+                $query->execute(['user_id' => $user_id]);
+                $current_point = $query->fetch(PDO::FETCH_ASSOC)['balance'] ?? 0;
+                ?>
                 <div class="points_info">
-                    <p>현재 포인트: <strong>₩10,000</strong></p>
+                    <p>현재 포인트: <strong><?= htmlspecialchars(number_format($current_point)); ?>점</strong></p>
                 </div>
                 <div class="points_history">
                     <h3>포인트 내역</h3>
@@ -441,31 +464,26 @@ if (session_status() === PHP_SESSION_NONE) {
                         </thead>
                         <tbody>
                             <?php
-                            // 예시 데이터 - 실제 구현 시 데이터베이스에서 불러와야 함
-                            $points_history = array(
-                                array('date' => '2024-12-01', 'description' => '상품 구매', 'points' => '+5,000', 'balance' => '10,000'),
-                                array('date' => '2024-11-15', 'description' => '리뷰 작성', 'points' => '+2,000', 'balance' => '5,000'),
-                                array('date' => '2024-10-20', 'description' => '가입 포인트', 'points' => '+3,000', 'balance' => '3,000'),
-                                array('date' => '2024-09-25', 'description' => '이벤트 참여', 'points' => '+1,000', 'balance' => '4,000'),
-                                array('date' => '2024-08-30', 'description' => '상품 구매', 'points' => '-1,000', 'balance' => '3,000'),
-                            );
+                            $query = $pdo->prepare('SELECT created_at, description, points, balance FROM points WHERE user_id = :user_id ORDER BY created_at DESC');
+                            $query->execute(['user_id' => $user_id]);
+                            $points_history = $query->fetchAll(PDO::FETCH_ASSOC);
+                            $points_total = count($points_history);
+                            $points_display_limit = 4;
+                            ?>
 
-                            foreach ($points_history as $index => $history) {
-                                // 초기에는 4개만 보이고, 그 이후는 숨김
-                                $display_class = ($index < 4) ? '' : ' hidden';
+                            <?php foreach ($points_history as $index => $history) {
+                                $display_class = ($index < $points_display_limit) ? '' : ' hidden';
                             ?>
-                                <tr class="point_row<?php echo $display_class; ?>">
-                                    <td><?php echo htmlspecialchars($history['date']); ?></td>
-                                    <td><?php echo htmlspecialchars($history['description']); ?></td>
-                                    <td><?php echo htmlspecialchars($history['points']); ?></td>
-                                    <td><?php echo htmlspecialchars($history['balance']); ?></td>
+                                <tr class="point_row<?= $display_class; ?>">
+                                    <td><?= htmlspecialchars($history['created_at']); ?></td>
+                                    <td><?= htmlspecialchars($history['description']); ?></td>
+                                    <td><?= htmlspecialchars(number_format($history['points'])); ?>점</td>
+                                    <td><?= htmlspecialchars(number_format($history['balance'])); ?>점</td>
                                 </tr>
-                            <?php
-                            }
-                            ?>
+                            <?php } ?>
                         </tbody>
                     </table>
-                    <?php if (count($points_history) > 4) { ?>
+                    <?php if ($points_total > $points_display_limit) { ?>
                         <button class="load_more_btn" data-section="points_history">더보기</button>
                     <?php } ?>
                 </div>
@@ -476,70 +494,33 @@ if (session_status() === PHP_SESSION_NONE) {
                 <h2 class="section_title">내가 작성한 게시물</h2>
                 <div class="posts_tabs">
                     <button class="posts_tab active" data-tab="all">전체</button>
-                    <button class="posts_tab" data-tab="reviews">리뷰</button>
+                    <button class="posts_tab" data-tab="review">리뷰</button>
                     <button class="posts_tab" data-tab="qna">Q&A</button>
                 </div>
 
-                <!-- 전체 게시물 섹션 -->
+                <!-- 게시물 리스트 -->
                 <div class="posts_list active" id="all">
                     <?php
-                    foreach ($all_posts as $index => $post) {
-                        // 초기에는 4개만 보이고, 그 이후는 숨김
-                        $display_class = ($index < 4) ? '' : ' hidden';
+                    $query = $pdo->prepare('SELECT id, title, created_at, content, post_type FROM posts WHERE user_id = :user_id ORDER BY created_at DESC');
+                    $query->execute(['user_id' => $user_id]);
+                    $posts = $query->fetchAll(PDO::FETCH_ASSOC);
+                    $posts_total = count($posts);
+                    $posts_display_limit = 4;
                     ?>
-                        <div class="post_item<?php echo $display_class; ?>" onclick="window.location.href='post_detail.php?id=<?php echo $index; ?>'">
-                            <div class="post_title"><?php echo htmlspecialchars($post['title']); ?></div>
-                            <div class="post_date"><?php echo htmlspecialchars($post['date']); ?></div>
-                            <div class="post_content"><?php echo htmlspecialchars($post['content']); ?></div>
+
+                    <?php foreach ($posts as $index => $post) {
+                        $display_class = ($index < $posts_display_limit) ? '' : ' hidden';
+                        $post_type = htmlspecialchars($post['post_type']);
+                    ?>
+                        <div class="post_item<?= $display_class; ?>" data-post-type="<?= $post_type; ?>" onclick="window.location='./board_view.php?id=<?= htmlspecialchars($post['id'], ENT_QUOTES, 'UTF-8') ?>'">
+                            <div class="post_title"><?= htmlspecialchars($post['title']); ?></div>
+                            <div class="post_date"><?= htmlspecialchars($post['created_at']); ?></div>
                         </div>
-                    <?php
-                    }
-                    ?>
+                    <?php } ?>
                 </div>
 
-                <!-- 리뷰 게시물 섹션 -->
-                <div class="posts_list" id="reviews">
-                    <?php
-                    foreach ($reviews as $index => $review) {
-                        // 초기에는 4개만 보이고, 그 이후는 숨김
-                        $display_class = ($index < 4) ? '' : ' hidden';
-                    ?>
-                        <div class="post_item<?php echo $display_class; ?>" onclick="window.location.href='post_detail.php?id=<?php echo $index; ?>'">
-                            <div class="post_title"><?php echo htmlspecialchars($review['title']); ?></div>
-                            <div class="post_date"><?php echo htmlspecialchars($review['date']); ?></div>
-                            <div class="post_content"><?php echo htmlspecialchars($review['content']); ?></div>
-                        </div>
-                    <?php
-                    }
-                    ?>
-                </div>
-
-                <!-- Q&A 게시물 섹션 -->
-                <div class="posts_list" id="qna">
-                    <?php
-                    foreach ($qna as $index => $question) {
-                        // 초기에는 4개만 보이고, 그 이후는 숨김
-                        $display_class = ($index < 4) ? '' : ' hidden';
-                    ?>
-                        <div class="post_item<?php echo $display_class; ?>" onclick="window.location.href='post_detail.php?id=<?php echo $index; ?>'">
-                            <div class="post_title"><?php echo htmlspecialchars($question['title']); ?></div>
-                            <div class="post_date"><?php echo htmlspecialchars($question['date']); ?></div>
-                            <div class="post_content"><?php echo htmlspecialchars($question['content']); ?></div>
-                        </div>
-                    <?php
-                    }
-                    ?>
-                </div>
-
-                <!-- 각 리스트에 대한 더보기 버튼 -->
-                <?php if (count($all_posts) > 4) { ?>
-                    <button class="load_more_btn" data-section="all">더보기</button>
-                <?php } ?>
-                <?php if (count($reviews) > 4) { ?>
-                    <button class="load_more_btn" data-section="reviews">더보기</button>
-                <?php } ?>
-                <?php if (count($qna) > 4) { ?>
-                    <button class="load_more_btn" data-section="qna">더보기</button>
+                <?php if ($posts_total > $posts_display_limit) { ?>
+                    <button class="load_more_btn" data-section="posts">더보기</button>
                 <?php } ?>
             </div>
         </div>
@@ -548,80 +529,90 @@ if (session_status() === PHP_SESSION_NONE) {
     <?php include("./Components/FooterComponents.php"); ?>
 
     <script>
-        // 게시물 탭 전환 스크립트
-        const tabs = document.querySelectorAll('.posts_tab');
-        const postsLists = document.querySelectorAll('.posts_list');
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadMoreButtons = document.querySelectorAll('.load_more_btn');
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // 모든 탭에서 active 클래스 제거
-                tabs.forEach(t => t.classList.remove('active'));
-                // 클릭한 탭에 active 클래스 추가
-                tab.classList.add('active');
+            loadMoreButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const section = button.getAttribute('data-section');
+                    let items, displayLimit;
 
-                // 모든 게시물 리스트 숨기기
-                postsLists.forEach(list => list.classList.remove('active'));
+                    switch (section) {
+                        case 'orders':
+                            items = document.querySelectorAll('.order_item.hidden');
+                            displayLimit = 4;
+                            break;
+                        case 'favorites':
+                            items = document.querySelectorAll('.favorite_item.hidden');
+                            displayLimit = 4;
+                            break;
+                        case 'points_history':
+                            items = document.querySelectorAll('.point_row.hidden');
+                            displayLimit = 4;
+                            break;
+                        case 'posts':
+                            const activeTab = document.querySelector('.posts_tab.active').getAttribute('data-tab');
+                            if (activeTab === 'all') {
+                                items = document.querySelectorAll('.post_item.hidden');
+                            } else {
+                                items = document.querySelectorAll(`.post_item.hidden[data-post-type="${activeTab}"]`);
+                            }
+                            displayLimit = 4;
+                            break;
+                        default:
+                            items = [];
+                    }
 
-                // 클릭한 탭에 해당하는 게시물 리스트 표시
-                const target = tab.getAttribute('data-tab');
-                if (target === 'all') {
-                    document.getElementById('all').classList.add('active');
-                } else {
-                    document.getElementById(target).classList.add('active');
-                }
+                    for (let i = 0; i < displayLimit && i < items.length; i++) {
+                        items[i].classList.remove('hidden');
+                    }
+
+                    if (items.length <= displayLimit) {
+                        button.style.display = 'none';
+                    }
+                });
             });
-        });
 
-        // 더보기 버튼 스크립트
-        const loadMoreButtons = document.querySelectorAll('.load_more_btn');
+            // 게시물 탭 전환 기능
+            const tabs = document.querySelectorAll('.posts_tab');
+            const postsList = document.querySelector('.posts_list');
 
-        loadMoreButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const section = button.getAttribute('data-section');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const target = tab.getAttribute('data-tab');
 
-                if (section === 'points_history') {
-                    const rows = document.querySelectorAll('.point_row.hidden');
-                    let displayed = 0;
-                    for (let i = 0; i < rows.length; i++) {
-                        if (displayed >= 6) break;
-                        rows[i].classList.remove('hidden');
-                        displayed++;
+                    // 활성화된 탭과 리스트 초기화
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // 클릭한 탭 활성화
+                    tab.classList.add('active');
+
+                    // 필터링된 게시물 표시
+                    const allPosts = document.querySelectorAll('.post_item');
+                    allPosts.forEach(post => {
+                        if (target === 'all' || post.getAttribute('data-post-type') === target) {
+                            post.classList.remove('hidden');
+                        } else {
+                            post.classList.add('hidden');
+                        }
+                    });
+
+                    // '더보기' 버튼 표시 여부 조정
+                    const totalVisible = Array.from(allPosts).filter(post => {
+                        return target === 'all' || post.getAttribute('data-post-type') === target;
+                    }).length;
+
+                    const initiallyVisible = 4;
+                    const loadMoreButton = document.querySelector(`.load_more_btn[data-section="posts"]`);
+                    if (totalVisible > initiallyVisible) {
+                        loadMoreButton.style.display = 'block';
+                    } else {
+                        loadMoreButton.style.display = 'none';
                     }
-                    // 버튼 숨기기
-                    if (document.querySelectorAll('.point_row.hidden').length === 0) {
-                        button.style.display = 'none';
-                    }
-                } else if (section === 'all' || section === 'reviews' || section === 'qna') {
-                    const list = document.getElementById(section);
-                    const items = list.querySelectorAll('.post_item.hidden');
-                    let displayed = 0;
-                    for (let i = 0; i < items.length; i++) {
-                        if (displayed >= 6) break;
-                        items[i].classList.remove('hidden');
-                        displayed++;
-                    }
-                    // 버튼 숨기기
-                    if (list.querySelectorAll('.post_item.hidden').length === 0) {
-                        button.style.display = 'none';
-                    }
-                } else { // orders, favorites
-                    const list = document.querySelector(`.${section}_list`);
-                    const items = list.querySelectorAll(`.${section}_item.hidden`);
-                    let displayed = 0;
-                    for (let i = 0; i < items.length; i++) {
-                        if (displayed >= 6) break;
-                        items[i].classList.remove('hidden');
-                        displayed++;
-                    }
-                    // 버튼 숨기기
-                    if (list.querySelectorAll(`.${section}_item.hidden`).length === 0) {
-                        button.style.display = 'none';
-                    }
-                }
+                });
             });
         });
     </script>
-
 </body>
 
 </html>
