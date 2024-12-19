@@ -5,6 +5,14 @@ include('./config/db.php');
 // 랭킹 상품 조회 (판매순으로 정렬, 상위 8개)
 $ranking_stmt = $pdo->query("SELECT id, product_name, product_image, price FROM products ORDER BY sold_count DESC LIMIT 8");
 $ranking_products = $ranking_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 특가/이벤트 상품 조회 (is_event = 1, 상위 8개)
+$event_stmt = $pdo->query("SELECT id, product_name, product_image, price, discount_rate FROM products WHERE is_event = 1 ORDER BY created_at DESC LIMIT 8");
+$event_products = $event_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 공지사항 조회 (post_type = 'notice', 최신 5개)
+$notices_stmt = $pdo->query("SELECT id, title, content FROM posts WHERE post_type = 'notice' ORDER BY created_at DESC LIMIT 5");
+$notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -108,6 +116,50 @@ $ranking_products = $ranking_stmt->fetchAll(PDO::FETCH_ASSOC);
         .view_all_link a:hover {
             text-decoration: underline;
         }
+
+        /* 특가/이벤트 상품 스타일 */
+        .event_section {
+            gap: 16px;
+            width: 100%;
+            display: flex;
+            margin: 40px 0;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        /* 공지사항 스타일 */
+        .notice_section {
+            gap: 16px;
+            width: 100%;
+            display: flex;
+            margin: 40px 0;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .notice_list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .notice_item {
+            border-bottom: 1px solid var(--light-gray);
+            padding-bottom: 8px;
+        }
+
+        .notice_item h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .notice_item p {
+            margin: 4px 0 0;
+            font-size: 16px;
+            color: var(--gray);
+        }
     </style>
 </head>
 
@@ -144,8 +196,45 @@ $ranking_products = $ranking_stmt->fetchAll(PDO::FETCH_ASSOC);
                     ?>
                 </div>
                 <div class="view_all_link">
-                    <!-- < href="product.php">전체상품 보러가기 \→</a> -->
                     <a href="product.php">전체상품 보러가기 →</a>
+                </div>
+            </div>
+
+            <!-- 특가/이벤트 상품 섹션 -->
+            <div class="event_section">
+                <h2 class="section_title">특가/이벤트 상품</h2>
+                <div class="product_list">
+                    <?php
+                    foreach ($event_products as $ep) {
+                        $product = array(
+                            'id' => $ep['id'],
+                            'image' => $ep['product_image'],
+                            'name' => $ep['product_name'],
+                            'price' => $ep['price']
+                        );
+                        $mode = '';
+                        include("./Components/ProductComponents.php");
+                    }
+                    ?>
+                </div>
+            </div>
+
+            <!-- 공지사항 섹션 (posts 테이블에서 post_type='notice') -->
+            <div class="notice_section">
+                <h2 class="section_title">공지사항</h2>
+                <div class="notice_list">
+                    <?php
+                    if (count($notices) > 0) {
+                        foreach ($notices as $notice) {
+                            echo '<div class="notice_item">';
+                            echo '<h3>' . htmlspecialchars($notice['title']) . '</h3>';
+                            echo '<p>' . nl2br(htmlspecialchars($notice['content'])) . '</p>';
+                            echo '</div>';
+                        }
+                    } else {
+                        echo '<p>등록된 공지사항이 없습니다.</p>';
+                    }
+                    ?>
                 </div>
             </div>
         </div>

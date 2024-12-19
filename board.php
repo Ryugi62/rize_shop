@@ -242,7 +242,7 @@ $total_pages = ceil($total_posts / $limit);
                 <a href="./write.php" class="write_button">글쓰기</a>
             </div>
             <div class="board_mode">
-                <a href="./board.php<?= $mode === '' ? '' : '?mode=' . htmlspecialchars($mode) ?>" class="<?= ($mode === '') ? 'active' : '' ?>">전체</a>
+                <a href="./board.php?mode=all<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'all' || $mode === '') ? 'active' : ' ' ?>">전체</a>
                 <a href="./board.php?mode=notice<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'notice') ? 'active' : '' ?>">공지사항</a>
                 <a href="./board.php?mode=review<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'review') ? 'active' : '' ?>">리뷰</a>
                 <a href="./board.php?mode=qna<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'qna') ? 'active' : '' ?>">Q & A</a>
