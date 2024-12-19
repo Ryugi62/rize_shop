@@ -246,10 +246,13 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <?php
                     if (count($notices) > 0) {
                         foreach ($notices as $notice) {
-                            // HTML을 그대로 렌더링 (보안 고려 필요)
                             echo '<div class="notice_item">';
-                            echo '<h3>' . htmlspecialchars($notice['title']) . '</h3>';
-                            echo '<div class="notice_content">' . $notice['content'] . '</div>'; // HTML 태그 반영
+                            // 제목에 링크 추가
+                            echo '<h3><a href="board_view.php?id=' . htmlspecialchars($notice['id'], ENT_QUOTES, 'UTF-8') . '">'
+                                . htmlspecialchars($notice['title'], ENT_QUOTES, 'UTF-8')
+                                . '</a></h3>';
+                            // HTML 태그가 반영된 내용 출력
+                            echo '<div class="notice_content">' . $notice['content'] . '</div>';
                             echo '</div>';
                         }
                     } else {
@@ -258,6 +261,7 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
                     ?>
                 </div>
             </div>
+
         </div>
     </main>
 
