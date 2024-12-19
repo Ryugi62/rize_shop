@@ -1,8 +1,18 @@
 <?php
-// write.php
-
 session_start();
-require_once './config/db.php'; // 데이터베이스 연결 설정 포함
+require_once './config/db.php';
+
+// 유저 정보 조회 (role 확인)
+$user_id = $_SESSION['user_id'] ?? null;
+$user_role = 'user'; // 기본 user
+if ($user_id) {
+    $user_stmt = $pdo->prepare("SELECT role FROM users WHERE id = :id");
+    $user_stmt->execute(['id' => $user_id]);
+    $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+    if ($user && $user['role'] === 'admin') {
+        $user_role = 'admin';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -12,7 +22,6 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>글쓰기 - RISZE</title>
     <link rel="stylesheet" href="./style.css">
-    <!-- CKEditor 5 CDN -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <style>
         .write_view {
@@ -124,7 +133,9 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
                 <label for="post_type">카테고리</label>
                 <select id="post_type" name="post_type" required>
                     <option value="">선택하세요</option>
-                    <option value="notice">공지사항</option>
+                    <?php if ($user_role === 'admin'): ?>
+                        <option value="notice">공지사항</option>
+                    <?php endif; ?>
                     <option value="review">리뷰</option>
                     <option value="qna">Q & A</option>
                 </select>
@@ -142,10 +153,8 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
 
     <?php include("./Components/FooterComponents.php"); ?>
 
-    <!-- CKEditor 5 초기화 스크립트 -->
     <script>
         let editorInstance;
-
         ClassicEditor
             .create(document.querySelector('#content'), {
                 toolbar: {
@@ -163,7 +172,6 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
                         'mergeTableCells'
                     ]
                 },
-                licenseKey: '', // 무료 사용 시 비워두세요.
             })
             .then(editor => {
                 editorInstance = editor;
@@ -174,14 +182,12 @@ require_once './config/db.php'; // 데이터베이스 연결 설정 포함
 
         document.getElementById('writeForm').addEventListener('submit', function(event) {
             const data = editorInstance.getData().trim();
-            // HTML 태그를 제거하고 내용이 비어있는지 확인
             const div = document.createElement("div");
             div.innerHTML = data;
             const text = div.textContent || div.innerText || "";
             if (text.trim() === "") {
                 event.preventDefault();
                 alert('내용을 작성하세요.');
-                // 에디터에 포커스 설정
                 editorInstance.editing.view.focus();
             }
         });

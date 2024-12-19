@@ -11,8 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     $description = $_POST['description']; // CKEditor로 입력한 HTML
     $stock_str = trim($_POST['stock']);
 
+    // 할인금액 추가 부분
+    $discount_str = trim($_POST['discount_amount']);
+
     $price = (int)preg_replace('/[^0-9]/', '', $price_str);
     $stock = (int)preg_replace('/[^0-9]/', '', $stock_str);
+    $discount_amount = (int)preg_replace('/[^0-9]/', '', $discount_str);
 
     $upload_dir = './assets/images/';
     $default_image = './assets/images/default.png';
@@ -42,15 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
             $error = "모든 필드를 올바르게 입력해주세요 (가격은 숫자, 재고는 0 이상의 숫자).";
         } else {
             $stmt = $pdo->prepare("
-                INSERT INTO products (product_name, product_image, price, description, rating, reviews, stock) 
-                VALUES (:product_name, :product_image, :price, :description, 0, 0, :stock)
+                INSERT INTO products (product_name, product_image, price, description, rating, reviews, stock, discount_amount) 
+                VALUES (:product_name, :product_image, :price, :description, 0, 0, :stock, :discount_amount)
             ");
             $success_insert = $stmt->execute([
                 'product_name' => $name,
                 'product_image' => $image_path,
                 'price' => $price,
                 'description' => $description,
-                'stock' => $stock
+                'stock' => $stock,
+                'discount_amount' => $discount_amount // 할인금액 추가
             ]);
 
             if ($success_insert) {
@@ -164,6 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
             <div class="form_group">
                 <label for="stock">재고 수량:</label>
                 <input type="number" id="stock" name="stock" required min="0" value="0">
+            </div>
+            <div class="form_group">
+                <label for="discount_amount">할인 금액 (0이면 할인 없음):</label>
+                <input type="number" id="discount_amount" name="discount_amount" required min="0" value="0">
             </div>
             <div class="form_group">
                 <label for="image_file">상품 이미지 첨부:</label>

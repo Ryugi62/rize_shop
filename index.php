@@ -2,15 +2,21 @@
 session_start();
 include('./config/db.php');
 
-// 랭킹 상품 조회 (판매순으로 정렬, 상위 8개)
-$ranking_stmt = $pdo->query("SELECT id, product_name, product_image, price FROM products ORDER BY sold_count DESC LIMIT 8");
+// 랭킹 상품 조회
+$ranking_stmt = $pdo->query("SELECT id, product_name, product_image, price, discount_amount FROM products ORDER BY sold_count DESC LIMIT 8");
 $ranking_products = $ranking_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 특가/이벤트 상품 조회 (is_event = 1, 상위 8개)
-$event_stmt = $pdo->query("SELECT id, product_name, product_image, price, discount_rate FROM products WHERE is_event = 1 ORDER BY created_at DESC LIMIT 8");
+// 특가/이벤트 상품 조회
+$event_stmt = $pdo->query("
+    SELECT id, product_name, product_image, price, discount_amount
+    FROM products
+    WHERE is_event = 1 OR discount_amount > 0
+    ORDER BY created_at DESC
+    LIMIT 8
+");
 $event_products = $event_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 공지사항 조회 (post_type = 'notice', 최신 5개)
+// 공지사항 조회
 $notices_stmt = $pdo->query("SELECT id, title, content FROM posts WHERE post_type = 'notice' ORDER BY created_at DESC LIMIT 5");
 $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -21,10 +27,7 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RISZE - SHOP</title>
-
-    <!-- 외부 스타일 시트 링크 -->
     <link rel="stylesheet" href="./style.css">
-
     <style>
         main {
             position: relative;
@@ -184,12 +187,19 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="product_list">
                     <?php
                     foreach ($ranking_products as $rp) {
-                        $product = array(
+                        $original_price = $rp['price'];
+                        $discount_amount = $rp['discount_amount'];
+                        $final_price = $original_price - $discount_amount;
+                        if ($final_price < 0) $final_price = 0;
+
+                        $product = [
                             'id' => $rp['id'],
                             'image' => $rp['product_image'],
                             'name' => $rp['product_name'],
-                            'price' => $rp['price']
-                        );
+                            'price' => $original_price,
+                            'discount_amount' => $discount_amount,
+                            'final_price' => $final_price
+                        ];
                         $mode = '';
                         include("./Components/ProductComponents.php");
                     }
@@ -206,29 +216,40 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="product_list">
                     <?php
                     foreach ($event_products as $ep) {
-                        $product = array(
+                        $original_price = $ep['price'];
+                        $discount_amount = $ep['discount_amount'];
+                        $final_price = $original_price - $discount_amount;
+                        if ($final_price < 0) $final_price = 0;
+
+                        $product = [
                             'id' => $ep['id'],
                             'image' => $ep['product_image'],
                             'name' => $ep['product_name'],
-                            'price' => $ep['price']
-                        );
+                            'price' => $original_price,
+                            'discount_amount' => $discount_amount,
+                            'final_price' => $final_price
+                        ];
                         $mode = '';
                         include("./Components/ProductComponents.php");
                     }
                     ?>
                 </div>
+                <div class="view_all_link">
+                    <a href="product.php">전체상품 보러가기 →</a>
+                </div>
             </div>
 
-            <!-- 공지사항 섹션 (posts 테이블에서 post_type='notice') -->
+            <!-- 공지사항 섹션 -->
             <div class="notice_section">
                 <h2 class="section_title">공지사항</h2>
                 <div class="notice_list">
                     <?php
                     if (count($notices) > 0) {
                         foreach ($notices as $notice) {
+                            // HTML을 그대로 렌더링 (보안 고려 필요)
                             echo '<div class="notice_item">';
                             echo '<h3>' . htmlspecialchars($notice['title']) . '</h3>';
-                            echo '<p>' . nl2br(htmlspecialchars($notice['content'])) . '</p>';
+                            echo '<div class="notice_content">' . $notice['content'] . '</div>'; // HTML 태그 반영
                             echo '</div>';
                         }
                     } else {

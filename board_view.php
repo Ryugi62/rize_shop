@@ -298,6 +298,7 @@ function get_comments($pdo, $post_id, $parent_id = NULL, $level = 0, &$current_g
             margin-bottom: 30px;
             color: var(--white);
             min-height: 550px;
+            width: 100%;
         }
 
         /* 여기서 post['content'] HTML 그대로 출력 */

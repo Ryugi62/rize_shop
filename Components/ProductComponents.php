@@ -5,20 +5,31 @@ if (isset($product) && is_array($product)) {
     $id = htmlspecialchars($product['id'] ?? '');
     $image = htmlspecialchars($product['image'] ?? './assets/images/default_product.png'); // 기본 이미지 설정
     $name = htmlspecialchars($product['name'] ?? '알 수 없는 상품');
-    $price = htmlspecialchars($product['price'] ?? 0); // 기본값 0 설정
+    $original_price = $product['price'] ?? 0;
+    $discount_amount = $product['discount_amount'] ?? 0;
+    $final_price_value = $product['final_price'] ?? $original_price; // final_price가 없으면 원가 그대로
 
-    // 가격이 숫자인지 확인하고, 숫자가 아니면 기본값 0 설정
-    if (!is_numeric($price)) {
-        $price = 0;
+    // 가격 형식 지정
+    $original_price_formatted = number_format((float)$original_price) . '원';
+    $final_price_formatted = number_format((float)$final_price_value) . '원';
+
+    // 할인 여부에 따라 가격 표출 방식 결정
+    if ($discount_amount > 0) {
+        // 할인 적용
+        $price_html = '<p class="product_price">'
+            . '<span style="text-decoration: line-through; color:#888;">' . $original_price_formatted . '</span> '
+            . '→ <span style="color:var(--main); font-weight:bold;">' . $final_price_formatted . '</span>'
+            . '</p>';
+    } else {
+        // 할인 없음
+        $price_html = '<p class="product_price">' . $original_price_formatted . '</p>';
     }
-
-    $price_formatted = number_format((float)$price) . '원'; // 숫자 포맷
 } else {
     // 기본값 설정
     $id = '';
     $image = './assets/images/default_product.png';
     $name = '알 수 없는 상품';
-    $price_formatted = '0원';
+    $price_html = '<p class="product_price">0원</p>';
 }
 
 // 모드 확인
@@ -28,7 +39,7 @@ $mode = $mode ?? ''; // 기본값은 빈 문자열
 <div class="product_component" onclick="location.href='product_detail.php?id=<?= $id ?>'">
     <img src="<?= $image; ?>" alt="<?= $name; ?> 이미지" class="product_image">
     <h3 class="product_name"><?= $name; ?></h3>
-    <p class="product_price"><?= $price_formatted; ?></p>
+    <?= $price_html; ?>
     <?php if ($mode === "view"): ?>
         <div class="product_button">
             <button class="product_like_button" onclick="event.stopPropagation(); likeProduct(<?= $id ?>)">찜하기</button>

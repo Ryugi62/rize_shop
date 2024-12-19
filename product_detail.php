@@ -10,8 +10,8 @@ if (!isset($_GET['id'])) {
 
 $product_id = intval($_GET['id']);
 
-// 상품 정보 조회
-$stmt = $pdo->prepare("SELECT id, product_name, product_image, price, description, rating, reviews, stock FROM products WHERE id = :id");
+// 상품 정보 조회 (discount_amount 포함)
+$stmt = $pdo->prepare("SELECT id, product_name, product_image, price, description, rating, reviews, stock, discount_amount FROM products WHERE id = :id");
 $stmt->execute(['id' => $product_id]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -67,6 +67,26 @@ $rating = floatval($product['rating'] ?? 0);
 $full_stars = floor($rating);
 $empty_stars = 5 - $full_stars;
 $stars_html = str_repeat("★", $full_stars) . str_repeat("☆", $empty_stars);
+
+// 할인 표시 로직 추가
+$original_price = $product['price'];
+$discount_amount = $product['discount_amount'];
+$final_price = $original_price;
+
+$price_html = '';
+if ($discount_amount > 0) {
+    $final_price = $original_price - $discount_amount;
+    if ($final_price < 0) {
+        $final_price = 0; // 이상한 값 방지
+    }
+    $price_html = '<p class="price"><span style="text-decoration: line-through; color: #888;">'
+        . number_format($original_price)
+        . '원</span> → <span style="color: var(--main); font-weight:bold;">'
+        . number_format($final_price)
+        . '원</span></p>';
+} else {
+    $price_html = '<p class="price">' . number_format($original_price) . '원</p>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -163,8 +183,10 @@ $stars_html = str_repeat("★", $full_stars) . str_repeat("☆", $empty_stars);
         .price {
             font-size: 1.8rem;
             font-weight: bold;
-            color: var(--main);
             margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .product-stats {
@@ -348,7 +370,8 @@ $stars_html = str_repeat("★", $full_stars) . str_repeat("☆", $empty_stars);
             </div>
             <div class="product-info">
                 <h1><?php echo htmlspecialchars($product['product_name']); ?></h1>
-                <p class="price"><?php echo number_format($product['price']); ?>원</p>
+                <!-- 할인 적용된 price_html 출력 -->
+                <?php echo $price_html; ?>
                 <div class="product-stats">
                     <p>평점: <?php echo $stars_html; ?> (<?php echo htmlspecialchars($product['reviews'] ?? 0); ?>개 리뷰)</p>
                     <p>남은 재고: <?php echo htmlspecialchars($product['stock'] ?? 0); ?>개</p>

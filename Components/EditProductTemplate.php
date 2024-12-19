@@ -98,6 +98,13 @@
             <label for="stock">재고 수량:</label>
             <input type="number" id="stock" name="stock" required min="0" value="<?php echo htmlspecialchars($product['stock']); ?>">
         </div>
+
+        <!-- 할인 금액 필드 추가 -->
+        <div class="form_group">
+            <label for="discount_amount">할인 금액 (0이면 할인 없음):</label>
+            <input type="number" id="discount_amount" name="discount_amount" required min="0" value="<?php echo isset($product['discount_amount']) ? htmlspecialchars($product['discount_amount']) : 0; ?>">
+        </div>
+
         <div class="form_group">
             <label for="image_file">상품 이미지 (필요 시 변경):</label>
             <input type="file" id="image_file" name="image_file" accept="image/*">

@@ -5,7 +5,7 @@ if (!isset($product_id)) {
 }
 
 // 상품 조회
-$stmt = $pdo->prepare("SELECT product_name, product_image, price, description, stock FROM products WHERE id = :id");
+$stmt = $pdo->prepare("SELECT product_name, product_image, price, description, stock, discount_amount FROM products WHERE id = :id");
 $stmt->execute(['id' => $product_id]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -22,9 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
     $price_str = trim($_POST['price']);
     $description = $_POST['description'];
     $stock_str = trim($_POST['stock']);
+    $discount_str = trim($_POST['discount_amount']);
 
     $price = (int)preg_replace('/[^0-9]/', '', $price_str);
     $stock = (int)preg_replace('/[^0-9]/', '', $stock_str);
+    $discount_amount = (int)preg_replace('/[^0-9]/', '', $discount_str);
 
     if ($price <= 0) {
         $error = "가격은 1원 이상이어야 합니다.";
@@ -60,13 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
         if ($name === '' || $price === 0 || $stock < 0) {
             $error = "모든 필드를 올바르게 입력해주세요 (가격은 숫자, 재고는 0 이상의 숫자).";
         } else {
-            $update_stmt = $pdo->prepare("UPDATE products SET product_name=:pn, product_image=:pi, price=:pr, description=:d, stock=:s WHERE id=:id");
+            $update_stmt = $pdo->prepare("UPDATE products SET product_name=:pn, product_image=:pi, price=:pr, description=:d, stock=:s, discount_amount=:da WHERE id=:id");
             $success_update = $update_stmt->execute([
                 'pn' => $name,
                 'pi' => $image_path,
                 'pr' => $price,
                 'd' => $description,
                 's' => $stock,
+                'da' => $discount_amount,
                 'id' => $product_id
             ]);
 
