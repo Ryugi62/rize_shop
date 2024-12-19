@@ -188,6 +188,30 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
         .info_links a:hover {
             color: #2ef3e1;
         }
+
+        .no_shipping_info {
+            background-color: #222;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            color: #eee;
+            margin-top: 16px;
+        }
+
+        .review_btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 16px;
+            background-color: var(--main);
+            color: #000;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .review_btn:hover {
+            background-color: var(--main-hover);
+        }
     </style>
 
 </head>
@@ -200,6 +224,8 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
         <div class="order_info">
             <?php if (!empty($order['product_image'])): ?>
                 <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
+            <?php else: ?>
+                <img src="./assets/images/default.png" alt="상품 이미지 없음">
             <?php endif; ?>
             <div class="order_details">
                 <p><strong>상품명:</strong> <?= htmlspecialchars($order['product_name']); ?></p>
@@ -209,7 +235,7 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
             </div>
         </div>
 
-        <?php if ($shipping): ?>
+        <?php if ($shipping && count($events) > 0): ?>
             <div class="shipping_info">
                 <div class="shipping_header">
                     <h2><?= htmlspecialchars($shipping['carrier_name']); ?> 배송 조회</h2>
@@ -231,13 +257,38 @@ usort($events, fn($a, $b) => strtotime($b['date']) <=> strtotime($a['date']));
                 </div>
                 <div class="notice_box">
                     • 배송 추적 정보는 실제와 차이가 있을 수 있습니다.<br>
-                    배송 관련 FAQ 등을 여기에 기재
+                    궁금한 사항은 고객센터로 문의해주세요.
                 </div>
             </div>
         <?php else: ?>
-            <div class="notice_box">
-                현재 배송 정보가 없습니다.
+            <div class="no_shipping_info">
+                <?php
+                // 상태에 따라 다른 안내문
+                switch ($order['status']) {
+                    case 'pending':
+                    case 'processing':
+                        echo "상품이 준비중입니다. 출고 후 배송 정보가 업데이트될 예정입니다.";
+                        break;
+                    case 'shipped':
+                        echo "배송은 시작되었으나 아직 추적 정보가 업데이트되지 않았습니다. 잠시 후 다시 확인해주세요.";
+                        break;
+                    case 'delivered':
+                        echo "배송이 완료되었습니다. 배송 정보가 늦게 반영될 수 있습니다.";
+                        break;
+                    case 'canceled':
+                        echo "주문이 취소되었습니다.";
+                        break;
+                    default:
+                        echo "현재 배송 정보가 없습니다.";
+                        break;
+                }
+                ?>
             </div>
+        <?php endif; ?>
+
+        <?php if ($order['status'] === 'delivered'): ?>
+            <!-- 리뷰 작성 버튼 -->
+            <a href="review_write.php?product_id=<?= urlencode($order['pid']); ?>" class="review_btn">리뷰 작성하기</a>
         <?php endif; ?>
 
         <a href="mypage.php" class="back_link">마이페이지로 돌아가기</a>

@@ -169,60 +169,87 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             background-color: var(--main-hover);
         }
 
-        .orders_section,
-        .favorites_section,
+        /* 제품 목록 스타일 (product.php 참조) */
+        .product_list {
+            gap: 16px;
+            width: 100%;
+            display: grid;
+            justify-items: center;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .product_item {
+            background: var(--light-black);
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-in-out;
+            position: relative;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+        }
+
+        .product_item:hover {
+            transform: scale(1.05);
+            background-color: var(--black-hover);
+        }
+
+        .product_item img {
+            width: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+            align-self: center;
+        }
+
+        .product_name {
+            margin: 0;
+            font-size: 18px;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .product_item p {
+            font-size: 16px;
+            color: var(--gray);
+            margin: 0;
+        }
+
+        .no-data-message {
+            text-align: center;
+            font-size: 18px;
+            color: var(--gray);
+            background-color: #222;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+
+        .price_area {
+            margin-top: 8px;
+        }
+
+        .original_price {
+            text-decoration: line-through;
+            color: #888;
+            margin-right: 4px;
+        }
+
+        .discounted_price {
+            color: var(--main);
+            font-weight: bold;
+        }
+
         .points_section,
         .posts_section {
             display: flex;
             flex-direction: column;
             gap: 16px;
-        }
-
-        .orders_list,
-        .favorites_list,
-        .posts_list {
-            display: grid;
-            gap: 16px;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        }
-
-        .order_item,
-        .favorite_item,
-        .post_item {
-            background-color: var(--light-black);
-            padding: 16px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-            cursor: pointer;
-            transition: background-color 0.3s, box-shadow 0.3s;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .order_item:hover,
-        .favorite_item:hover,
-        .post_item:hover {
-            background-color: var(--light-gray);
-            color: var(--black);
-        }
-
-        .order_item img,
-        .favorite_item img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-
-        .order_details,
-        .favorite_details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-            text-align: center;
         }
 
         .points_info {
@@ -235,7 +262,6 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
-        /* 포인트 히스토리 테이블 */
         .points_history {
             width: 100%;
             border-collapse: collapse;
@@ -323,32 +349,10 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             white-space: nowrap;
         }
 
-        .no-data-message {
-            text-align: center;
-            font-size: 18px;
-            color: var(--gray);
-            background-color: #222;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 10px 0;
-        }
-
         @media (max-width: 768px) {
             .profile_info {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-
-            .order_item,
-            .favorite_item,
-            .post_item {
-                align-items: center;
-            }
-
-            .order_item img,
-            .favorite_item img {
-                width: 100%;
-                height: auto;
             }
 
             .posts_tabs {
@@ -394,24 +398,34 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <a href="./edit_profile.php" class="edit_profile_btn">프로필 수정</a>
             </div>
 
-            <!-- 주문 내역 -->
+            <!-- 리뷰 작성하기 버튼 -->
             <a href="review_write.php" class="edit_profile_btn">리뷰 작성하기</a>
+
+            <!-- 주문 내역 -->
             <div class="orders_section">
                 <h2 class="section_title"><a href="orders.php">주문 내역</a></h2>
                 <?php if (count($orders) === 0): ?>
                     <div class="no-data-message">아직 주문 내역이 없습니다.</div>
                 <?php else: ?>
-                    <div class="orders_list">
+                    <div class="product_list">
                         <?php foreach ($orders as $order): ?>
-                            <a class="order_item" href="order_status.php?id=<?= urlencode($order['id']); ?>">
+                            <a class="product_item" href="order_status.php?id=<?= urlencode($order['id']); ?>">
                                 <?php if ($order['product_image']): ?>
                                     <img src="<?= htmlspecialchars($order['product_image']); ?>" alt="<?= htmlspecialchars($order['product_name']); ?>">
+                                <?php else: ?>
+                                    <img src="./assets/images/default.png" alt="상품 이미지 없음">
                                 <?php endif; ?>
-                                <div class="order_details">
-                                    <p><?= htmlspecialchars($order['product_name']); ?></p>
-                                    <p>가격: <?= number_format($order['price']); ?>원</p>
-                                    <p>주문일: <?= htmlspecialchars($order['order_date']); ?></p>
-                                </div>
+                                <h3 class="product_name"><?= htmlspecialchars($order['product_name']); ?></h3>
+                                <p><?= number_format($order['price']); ?>원</p>
+                                <p><?= htmlspecialchars($order['order_date']); ?></p>
+                                <p>상태: <?= htmlspecialchars(match ($order['status']) {
+                                            'pending' => '주문 접수 중',
+                                            'processing' => '상품 준비 중',
+                                            'shipped' => '배송 중',
+                                            'delivered' => '배송 완료',
+                                            'canceled' => '주문 취소',
+                                            default => '알 수 없음'
+                                        }); ?></p>
                             </a>
                         <?php endforeach; ?>
                     </div>
@@ -424,16 +438,16 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php if (count($favorites) === 0): ?>
                     <div class="no-data-message">아직 찜한 상품이 없습니다.</div>
                 <?php else: ?>
-                    <div class="favorites_list">
+                    <div class="product_list">
                         <?php foreach ($favorites as $favorite): ?>
-                            <a class="favorite_item" href="product_detail.php?id=<?= urlencode($favorite['product_id']); ?>">
+                            <a class="product_item" href="product_detail.php?id=<?= urlencode($favorite['product_id']); ?>">
                                 <?php if ($favorite['product_image']): ?>
                                     <img src="<?= htmlspecialchars($favorite['product_image']); ?>" alt="<?= htmlspecialchars($favorite['product_name']); ?>">
+                                <?php else: ?>
+                                    <img src="./assets/images/default.png" alt="상품 이미지 없음">
                                 <?php endif; ?>
-                                <div class="favorite_details">
-                                    <p><?= htmlspecialchars($favorite['product_name']); ?></p>
-                                    <p>가격: <?= number_format($favorite['price']); ?>원</p>
-                                </div>
+                                <h3 class="product_name"><?= htmlspecialchars($favorite['product_name']); ?></h3>
+                                <p><?= number_format($favorite['price']); ?>원</p>
                             </a>
                         <?php endforeach; ?>
                     </div>
@@ -506,7 +520,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
     <?php include("./Components/FooterComponents.php"); ?>
 
     <script>
-        // 탭 필터 로직 동일
+        // 게시물 탭 필터 로직
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.posts_tab');
             const posts = document.querySelectorAll('.post_item');

@@ -196,6 +196,7 @@ if ($mode === 'edit_product' && isset($_GET['id'])) {
                 <a href="./admin.php?mode=add_product" class="<?= ($mode == 'add_product') ? 'active' : '' ?>">상품 추가</a>
                 <a href="./admin.php?mode=board" class="<?= ($mode == 'board') ? 'active' : '' ?>">게시물 관리</a>
                 <a href="./admin.php?mode=user" class="<?= ($mode == 'user') ? 'active' : '' ?>">회원 관리</a>
+                <a href="./admin.php?mode=orders" class="<?= ($mode == 'orders') ? 'active' : '' ?>">주문 관리</a>
             </div>
 
             <div class="content_box">
@@ -209,8 +210,9 @@ if ($mode === 'edit_product' && isset($_GET['id'])) {
                 } else if ($mode == 'user') {
                     include("./Components/UserManager.php");
                 } else if ($mode == 'edit_product') {
-                    // 여기서는 템플릿(폼)만 출력
                     include("./Components/EditProductTemplate.php");
+                } else if ($mode == 'orders') {
+                    include("./Components/OrdersManager.php");
                 } else {
                     echo "<p>올바른 모드를 선택해주세요.</p>";
                 }

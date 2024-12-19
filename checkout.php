@@ -100,12 +100,111 @@ if ($is_direct_buy && $action === 'direct_preview') {
         $updPrd->execute(['qty' => $direct_product['quantity'], 'id' => $direct_product['id']]);
 
         // 포인트 차감 처리
+        $new_balance = $available_points;
         if ($used_points > 0) {
             $new_balance = $available_points - $used_points;
             $desc = "상품 구매 포인트 사용";
             $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
             $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => -$used_points, 'bal' => $new_balance]);
         }
+
+        // 결제 성공 후 포인트 적립
+        // 여기서는 결제 금액(final_price)의 1%를 포인트로 적립하는 예제
+        $earned_points = floor($final_price * 0.01); // 1% 적립
+        if ($earned_points > 0) {
+            $new_balance = $new_balance + $earned_points;
+            $desc = "상품 구매 적립";
+            $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
+            $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => $earned_points, 'bal' => $new_balance]);
+        }
+
+        $pdo->commit();
+        header("Location: thank_you.php");
+        exit;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        echo "<script>alert('결제 처리 중 오류가 발생했습니다: " . addslashes($e->getMessage()) . "');history.back();</script>";
+        exit();
+    }
+} elseif (!$is_direct_buy && $action === 'cart_buy') {
+    // 장바구니에서 선택한 상품 구매 처리 로직
+    $selected_cart_ids = $_POST['cart_ids'] ?? [];
+    if (empty($selected_cart_ids)) {
+        die('선택된 상품이 없습니다.');
+    }
+
+    $inClause = str_repeat('?,', count($selected_cart_ids) - 1) . '?';
+    $stmt = $pdo->prepare("
+        SELECT c.id as cart_id, c.product_id, c.quantity, p.product_name, p.product_image, p.price, p.stock
+        FROM cart c
+        JOIN products p ON c.product_id = p.id
+        WHERE c.id IN ($inClause) AND c.user_id = ?
+    ");
+    $stmt->execute(array_merge($selected_cart_ids, [$user_id]));
+    $cart_products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!$cart_products) {
+        die('선택한 장바구니 상품을 찾을 수 없습니다.');
+    }
+
+    $total = 0;
+    foreach ($cart_products as $cp) {
+        if ($cp['stock'] < $cp['quantity']) {
+            die('재고가 부족한 상품이 있습니다: ' . htmlspecialchars($cp['product_name']));
+        }
+        $total += $cp['price'] * $cp['quantity'];
+    }
+
+    $pointStmt = $pdo->prepare("SELECT balance FROM points WHERE user_id=:uid ORDER BY created_at DESC LIMIT 1");
+    $pointStmt->execute(['uid' => $user_id]);
+    $available_points = (int)($pointStmt->fetchColumn() ?? 0);
+
+    $max_point_use = floor($total * 0.07);
+    $max_usable_points = min($available_points, $max_point_use);
+
+    $used_points = isset($_POST['use_points']) ? (int)$_POST['use_points'] : 0;
+    if ($used_points > $max_usable_points) {
+        $used_points = $max_usable_points;
+    }
+
+    $final_price = $total - $used_points;
+    if ($final_price < 0) $final_price = 0;
+
+    $pdo->beginTransaction();
+    try {
+        foreach ($cart_products as $cp) {
+            $ord = $pdo->prepare("INSERT INTO orders (user_id, product_name, product_image, price, product_id, status) VALUES (:user_id, :pn, :pi, :pr, :pid, 'pending')");
+            $ord->execute([
+                'user_id' => $user_id,
+                'pn' => $cp['product_name'],
+                'pi' => $cp['product_image'],
+                'pr' => $cp['price'] * $cp['quantity'],
+                'pid' => $cp['product_id']
+            ]);
+
+            $updPrd = $pdo->prepare("UPDATE products SET sold_count = sold_count + :qty, stock = stock - :qty WHERE id=:id AND stock >= :qty");
+            $updPrd->execute(['qty' => $cp['quantity'], 'id' => $cp['product_id']]);
+        }
+
+        $new_balance = $available_points;
+        if ($used_points > 0) {
+            $new_balance = $available_points - $used_points;
+            $desc = "상품 구매 포인트 사용";
+            $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
+            $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => -$used_points, 'bal' => $new_balance]);
+        }
+
+        $earned_points = floor($final_price * 0.01);
+        if ($earned_points > 0) {
+            $new_balance = $new_balance + $earned_points;
+            $desc = "상품 구매 적립";
+            $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
+            $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => $earned_points, 'bal' => $new_balance]);
+        }
+
+        // 선택된 상품들 장바구니에서 제거 (필요 시)
+        $del_stmt = $pdo->prepare("DELETE FROM cart WHERE id IN ($inClause) AND user_id=?");
+        $del_stmt->execute(array_merge($selected_cart_ids, [$user_id]));
 
         $pdo->commit();
         header("Location: thank_you.php");
@@ -117,8 +216,6 @@ if ($is_direct_buy && $action === 'direct_preview') {
     }
 } else {
     // 그 외 경우에는 장바구니 구매, 또는 기본적인 상황 처리
-    // 여기서는 직접구매 플로우만 요구사항에 맞춰 수정하였으므로,
-    // direct_buy_flag 없는 경우 및 cart_buy 등은 기존 로직을 쓰거나 필요하다면 별도 처리 가능.
     die('유효하지 않은 접근입니다.');
 }
 

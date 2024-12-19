@@ -170,7 +170,6 @@ $page_title = "글쓰기 - RIZZ";
                     <?php if ($user_role === 'admin'): ?>
                         <option value="notice" <?php if ($post_type === 'notice') echo 'selected'; ?>>공지사항</option>
                     <?php endif; ?>
-                    <option value="review" <?php if ($post_type === 'review') echo 'selected'; ?>>리뷰</option>
                     <option value="qna" <?php if ($post_type === 'qna') echo 'selected'; ?>>Q & A</option>
                 </select>
 

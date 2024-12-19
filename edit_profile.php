@@ -202,7 +202,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <span id="username" class="non-editable"><?= htmlspecialchars($user['username']); ?></span>
                 </div>
-
+                <!-- username 값을 POST로 넘기기 위한 hidden input 추가 -->
+                <input type="hidden" name="username" value="<?= htmlspecialchars($user['username']); ?>">
 
                 <label for="email">이메일</label>
                 <input type="email" id="email" name="email" value="<?= htmlspecialchars($user['email']); ?>" required>

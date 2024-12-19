@@ -414,7 +414,6 @@ if ($discount_amount > 0) {
         <div class="tab-bar">
             <a href="#detail-section">상세정보</a>
             <a href="#review-section">리뷰</a>
-            <a href="#qna-section">Q&A</a>
             <a href="#related-section">관련상품</a>
         </div>
 
@@ -440,11 +439,6 @@ if ($discount_amount > 0) {
             <?php else: ?>
                 <div class="no-data-message">아직 등록된 리뷰가 없습니다.</div>
             <?php endif; ?>
-        </div>
-
-        <div id="qna-section" class="qna-section">
-            <h2>Q&A</h2>
-            <div class="no-data-message">등록된 Q&A가 없습니다.</div>
         </div>
 
         <div id="related-section" class="related-section">
