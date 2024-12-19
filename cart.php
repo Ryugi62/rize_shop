@@ -164,11 +164,10 @@ foreach ($cart_items as $item) {
                     <?php endforeach; ?>
                 </table>
                 <div style="margin-top:16px; text-align:right;">
-                    <form action="add_to_cart.php" method="post">
-                        <input type="hidden" name="product_id" value="123"> <!-- 상품 ID -->
-                        <input type="number" name="quantity" value="1" min="1">
-                        <button type="submit">장바구니에 담기</button>
-                    </form>
+                    <!-- 여기서는 예시로 product_id=123 상품을 장바구니에 담는 폼이 있는데 실제 로직에 맞게 수정 필요 -->
+                    <input type="hidden" name="product_id" value="123">
+                    <input type="number" name="quantity" value="1" min="1">
+                    <button type="submit" class="action-btn">장바구니에 담기</button>
                 </div>
             </form>
         <?php endif; ?>

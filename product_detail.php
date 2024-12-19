@@ -97,6 +97,7 @@ if ($discount_amount > 0) {
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="stylesheet" href="./style.css">
     <style>
+        /* 기존 스타일 유지 */
         :root {
             --main: #2ef3e1;
             --main-hover: #26d4c3;
@@ -370,21 +371,26 @@ if ($discount_amount > 0) {
             </div>
             <div class="product-info">
                 <h1><?php echo htmlspecialchars($product['product_name']); ?></h1>
-                <!-- 할인 적용된 price_html 출력 -->
                 <?php echo $price_html; ?>
                 <div class="product-stats">
                     <p>평점: <?php echo $stars_html; ?> (<?php echo htmlspecialchars($product['reviews'] ?? 0); ?>개 리뷰)</p>
                     <p>남은 재고: <?php echo htmlspecialchars($product['stock'] ?? 0); ?>개</p>
                 </div>
                 <?php if ($isLoggedIn): ?>
+                    <div>
+                        <!-- 공용 수량 input -->
+                        <label for="common_quantity" style="display:block;margin-bottom:8px;">수량:</label>
+                        <input type="number" id="common_quantity" value="<?php echo $in_cart ? $cart_qty : 1; ?>" min="1" max="<?php echo $product['stock']; ?>" style="width:60px;">
+                    </div>
                     <div class="action-button-group">
                         <button type="button" class="favorite-button <?php echo $favorited ? 'favorited' : ''; ?>" data-product-id="<?php echo $product_id; ?>">
                             <span class="heart-icon"><?php echo $favorited ? '♥' : '♡'; ?></span> <?php echo $favorited ? '찜완료' : '찜하기'; ?>
                         </button>
 
-                        <form action="add_to_cart.php" method="post" style="display:flex; gap:8px;">
+                        <form action="add_to_cart.php" method="post" id="addCartForm">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
-                            <input type="number" name="quantity" value="<?php echo $cart_qty; ?>" min="1" max="<?php echo $product['stock']; ?>" style="width:60px;">
+                            <!-- 수량을 전달할 hidden input -->
+                            <input type="hidden" name="quantity" id="cart_quantity">
                             <?php if ($in_cart): ?>
                                 <button type="submit" class="in-cart"><span class="cart-icon">🛒</span> 장바구니 담김</button>
                             <?php else: ?>
@@ -392,11 +398,11 @@ if ($discount_amount > 0) {
                             <?php endif; ?>
                         </form>
 
-                        <!-- 바로 구매하기 폼 추가 -->
-                        <form action="checkout.php" method="post">
+                        <form action="checkout.php" method="post" id="buyDirectForm">
                             <input type="hidden" name="action" value="buy_direct">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
-                            <input type="hidden" name="quantity" value="1">
+                            <!-- 수량을 전달할 hidden input -->
+                            <input type="hidden" name="quantity" id="buy_direct_quantity">
                             <button type="submit">바로 구매하기</button>
                         </form>
                     </div>
@@ -463,35 +469,51 @@ if ($discount_amount > 0) {
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const favButton = document.querySelector('.favorite-button');
-                if (!favButton) return;
+                const commonQty = document.getElementById('common_quantity');
+                const cartForm = document.getElementById('addCartForm');
+                const cartQtyInput = document.getElementById('cart_quantity');
+                const buyForm = document.getElementById('buyDirectForm');
+                const buyQtyInput = document.getElementById('buy_direct_quantity');
 
-                favButton.addEventListener('click', function() {
-                    const productId = this.dataset.productId;
-                    fetch('/api/toggle_favorites.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: 'product_id=' + productId
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.status === 'ok') {
-                                if (data.favorited) {
-                                    favButton.classList.add('favorited');
-                                    favButton.innerHTML = '<span class="heart-icon">♥</span> 찜완료';
+                if (favButton) {
+                    favButton.addEventListener('click', function() {
+                        const productId = this.dataset.productId;
+                        fetch('/api/toggle_favorites.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'product_id=' + productId
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.status === 'ok') {
+                                    if (data.favorited) {
+                                        favButton.classList.add('favorited');
+                                        favButton.innerHTML = '<span class="heart-icon">♥</span> 찜완료';
+                                    } else {
+                                        favButton.classList.remove('favorited');
+                                        favButton.innerHTML = '<span class="heart-icon">♡</span> 찜하기';
+                                    }
                                 } else {
-                                    favButton.classList.remove('favorited');
-                                    favButton.innerHTML = '<span class="heart-icon">♡</span> 찜하기';
+                                    alert('오류가 발생했습니다: ' + (data.message || '알 수 없는 오류'));
                                 }
-                            } else {
-                                alert('오류가 발생했습니다: ' + (data.message || '알 수 없는 오류'));
-                            }
-                        })
-                        .catch(e => {
-                            console.error(e);
-                            alert('요청 중 문제가 발생했습니다.');
-                        });
+                            })
+                            .catch(e => {
+                                console.error(e);
+                                alert('요청 중 문제가 발생했습니다.');
+                            });
+                    });
+                }
+
+                // 장바구니 폼 제출 시 공용 input 값 복사
+                cartForm.addEventListener('submit', function(e) {
+                    cartQtyInput.value = commonQty.value;
+                });
+
+                // 바로 구매 폼 제출 시 공용 input 값 복사
+                buyForm.addEventListener('submit', function(e) {
+                    buyQtyInput.value = commonQty.value;
                 });
             });
         </script>
