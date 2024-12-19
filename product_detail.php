@@ -24,9 +24,9 @@ if (!$product) {
 $related_stmt = $pdo->query("SELECT id, product_name, product_image, price FROM products ORDER BY created_at DESC LIMIT 2");
 $related_products = $related_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 리뷰 조회
+// 리뷰 조회 (rating 포함)
 $review_stmt = $pdo->prepare("
-    SELECT p.title, p.content, u.username, p.created_at 
+    SELECT p.title, p.content, p.rating, u.username, p.created_at 
     FROM posts p
     JOIN users u ON p.user_id = u.id
     WHERE p.product_id = :product_id AND p.post_type = 'review'
@@ -77,7 +77,7 @@ $price_html = '';
 if ($discount_amount > 0) {
     $final_price = $original_price - $discount_amount;
     if ($final_price < 0) {
-        $final_price = 0; // 이상한 값 방지
+        $final_price = 0;
     }
     $price_html = '<p class="price"><span style="text-decoration: line-through; color: #888;">'
         . number_format($original_price)
@@ -97,7 +97,6 @@ if ($discount_amount > 0) {
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="stylesheet" href="./style.css">
     <style>
-        /* 기존 스타일 유지 */
         :root {
             --main: #2ef3e1;
             --main-hover: #26d4c3;
@@ -389,7 +388,6 @@ if ($discount_amount > 0) {
 
                         <form action="add_to_cart.php" method="post" id="addCartForm">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
-                            <!-- 수량을 전달할 hidden input -->
                             <input type="hidden" name="quantity" id="cart_quantity">
                             <?php if ($in_cart): ?>
                                 <button type="submit" class="in-cart"><span class="cart-icon">🛒</span> 장바구니 담김</button>
@@ -398,11 +396,12 @@ if ($discount_amount > 0) {
                             <?php endif; ?>
                         </form>
 
+                        <!-- 바로 구매하기: checkout.php로 이동하여 결제 미리보기 -->
                         <form action="checkout.php" method="post" id="buyDirectForm">
-                            <input type="hidden" name="action" value="buy_direct">
+                            <input type="hidden" name="action" value="direct_preview">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
-                            <!-- 수량을 전달할 hidden input -->
                             <input type="hidden" name="quantity" id="buy_direct_quantity">
+                            <input type="hidden" name="direct_buy" value="1">
                             <button type="submit">바로 구매하기</button>
                         </form>
                     </div>
@@ -427,9 +426,14 @@ if ($discount_amount > 0) {
         <div id="review-section" class="additional-section">
             <h2>고객 리뷰</h2>
             <?php if (count($reviews) > 0): ?>
-                <?php foreach ($reviews as $rv): ?>
+                <?php foreach ($reviews as $rv):
+                    $review_rating = (int)$rv['rating'];
+                    $review_full_stars = str_repeat("★", $review_rating);
+                    $review_empty_stars = str_repeat("☆", 5 - $review_rating);
+                ?>
                     <div class="review">
                         <p><strong><?php echo htmlspecialchars($rv['username']); ?></strong>: <?php echo nl2br(htmlspecialchars($rv['content'])); ?></p>
+                        <p>평점: <?php echo $review_full_stars . $review_empty_stars; ?> (<?php echo $review_rating; ?>점)</p>
                         <p style="font-size:0.8rem; color:#aaa;"><?php echo htmlspecialchars($rv['created_at']); ?></p>
                     </div>
                 <?php endforeach; ?>
@@ -478,7 +482,7 @@ if ($discount_amount > 0) {
                 if (favButton) {
                     favButton.addEventListener('click', function() {
                         const productId = this.dataset.productId;
-                        fetch('/api/toggle_favorites.php', {
+                        fetch('/toggle_favorites.php', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/x-www-form-urlencoded'

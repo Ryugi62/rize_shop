@@ -216,6 +216,8 @@ $total_pages = ceil($total_posts / $limit);
             font-size: 16px;
             transition: background-color 0.3s, color 0.3s;
             text-decoration: none;
+            width: 100%;
+            text-align: center;
         }
 
         a.write_button:hover {
@@ -239,7 +241,6 @@ $total_pages = ceil($total_posts / $limit);
             <div class="section_header">
                 <h2 class="section_title">게시판</h2>
                 <!-- 글쓰기 버튼 추가 -->
-                <a href="./write.php" class="write_button">글쓰기</a>
             </div>
             <div class="board_mode">
                 <a href="./board.php?mode=all<?= isset($_GET['page']) ? '&page=' . htmlspecialchars($_GET['page']) : '' ?>" class="<?= ($mode === 'all' || $mode === '') ? 'active' : ' ' ?>">전체</a>
@@ -277,6 +278,9 @@ $total_pages = ceil($total_posts / $limit);
                     </tbody>
                 </table>
             </div>
+
+            <a href="./write.php" class="write_button">글쓰기</a>
+
 
             <!-- 네비게이션 (페이징 기능) -->
             <?php if ($total_pages > 1): ?>

@@ -252,7 +252,6 @@ $notices = $notices_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 . htmlspecialchars($notice['title'], ENT_QUOTES, 'UTF-8')
                                 . '</a></h3>';
                             // HTML 태그가 반영된 내용 출력
-                            echo '<div class="notice_content">' . $notice['content'] . '</div>';
                             echo '</div>';
                         }
                     } else {

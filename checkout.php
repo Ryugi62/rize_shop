@@ -16,21 +16,22 @@ if (!$user_info) {
     die('사용자 정보를 찾을 수 없습니다.');
 }
 
-// 액션에 따라 구매 대상 상품 결정
+// 액션 파라미터에 따라 동작 변경
 $action = $_POST['action'] ?? '';
+$direct_buy_flag = isset($_POST['direct_buy']) ? (int)$_POST['direct_buy'] : 0;
+$is_direct_buy = ($direct_buy_flag === 1);
 
 $cart_items = [];
 $total = 0;
 $direct_product = null; // 바로 구매 상품 정보 저장할 변수
-$is_direct_buy = ($action === 'buy_direct');
 
-// 바로 구매하기인 경우, product_id와 quantity를 받아 단일 상품 정보를 불러옴
-if ($is_direct_buy) {
+if ($is_direct_buy && $action === 'direct_preview') {
+    // 상품 상세 페이지에서 "바로 구매하기"를 눌러 결제 미리보기 화면으로 진입
     $direct_product_id = intval($_POST['product_id'] ?? 0);
     $direct_quantity = intval($_POST['quantity'] ?? 1);
 
     // 상품 정보 조회
-    $pstmt = $pdo->prepare("SELECT id, product_name, product_image, price FROM products WHERE id = :id");
+    $pstmt = $pdo->prepare("SELECT id, product_name, product_image, price, stock FROM products WHERE id = :id");
     $pstmt->execute(['id' => $direct_product_id]);
     $direct_product = $pstmt->fetch(PDO::FETCH_ASSOC);
 
@@ -38,26 +39,90 @@ if ($is_direct_buy) {
         die('상품을 찾을 수 없습니다.');
     }
 
-    $direct_product['quantity'] = $direct_quantity;
-    $subtotal = $direct_product['price'] * $direct_product['quantity'];
-    $total = $subtotal;
-} else {
-    // 장바구니 구매인 경우
-    $stmt = $pdo->prepare("
-        SELECT c.id, c.product_id, c.quantity, p.product_name, p.product_image, p.price
-        FROM cart c
-        JOIN products p ON c.product_id = p.id
-        WHERE c.user_id = :user_id
-    ");
-    $stmt->execute(['user_id' => $user_id]);
-    $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($cart_items as $item) {
-        $total += $item['price'] * $item['quantity'];
+    // 수량 검증
+    if ($direct_product['stock'] < $direct_quantity) {
+        die('재고가 부족합니다.');
     }
+
+    $direct_product['quantity'] = $direct_quantity;
+    $total = $direct_product['price'] * $direct_product['quantity'];
+} elseif ($is_direct_buy && $action === 'buy_direct') {
+    // "결제하기" 버튼 누른 후 실제 결제 처리
+    // 필요한 정보 재확인
+    $direct_product_id = intval($_POST['product_id'] ?? 0);
+    $direct_quantity = intval($_POST['quantity'] ?? 1);
+
+    $pstmt = $pdo->prepare("SELECT id, product_name, product_image, price, stock FROM products WHERE id = :id");
+    $pstmt->execute(['id' => $direct_product_id]);
+    $direct_product = $pstmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$direct_product) {
+        die('상품을 찾을 수 없습니다.');
+    }
+
+    if ($direct_product['stock'] < $direct_quantity) {
+        die('재고가 부족합니다.');
+    }
+
+    $direct_product['quantity'] = $direct_quantity;
+    $total = $direct_product['price'] * $direct_product['quantity'];
+
+    // 포인트 사용 확인
+    $pointStmt = $pdo->prepare("SELECT balance FROM points WHERE user_id=:uid ORDER BY created_at DESC LIMIT 1");
+    $pointStmt->execute(['uid' => $user_id]);
+    $available_points = (int)($pointStmt->fetchColumn() ?? 0);
+
+    $max_point_use = floor($total * 0.07);
+    $max_usable_points = min($available_points, $max_point_use);
+
+    $used_points = isset($_POST['use_points']) ? (int)$_POST['use_points'] : 0;
+    if ($used_points > $max_usable_points) {
+        $used_points = $max_usable_points;
+    }
+
+    $final_price = $total - $used_points;
+    if ($final_price < 0) $final_price = 0;
+
+    $pdo->beginTransaction();
+    try {
+        // 주문 생성
+        $ord = $pdo->prepare("INSERT INTO orders (user_id, product_name, product_image, price, product_id, status) VALUES (:user_id, :pn, :pi, :pr, :pid, 'pending')");
+        $ord->execute([
+            'user_id' => $user_id,
+            'pn' => $direct_product['product_name'],
+            'pi' => $direct_product['product_image'],
+            'pr' => $direct_product['price'] * $direct_product['quantity'],
+            'pid' => $direct_product['id']
+        ]);
+
+        // 재고 감소 및 판매량 증가
+        $updPrd = $pdo->prepare("UPDATE products SET sold_count = sold_count + :qty, stock = stock - :qty WHERE id=:id AND stock >= :qty");
+        $updPrd->execute(['qty' => $direct_product['quantity'], 'id' => $direct_product['id']]);
+
+        // 포인트 차감 처리
+        if ($used_points > 0) {
+            $new_balance = $available_points - $used_points;
+            $desc = "상품 구매 포인트 사용";
+            $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
+            $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => -$used_points, 'bal' => $new_balance]);
+        }
+
+        $pdo->commit();
+        header("Location: thank_you.php");
+        exit;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        echo "<script>alert('결제 처리 중 오류가 발생했습니다: " . addslashes($e->getMessage()) . "');history.back();</script>";
+        exit();
+    }
+} else {
+    // 그 외 경우에는 장바구니 구매, 또는 기본적인 상황 처리
+    // 여기서는 직접구매 플로우만 요구사항에 맞춰 수정하였으므로,
+    // direct_buy_flag 없는 경우 및 cart_buy 등은 기존 로직을 쓰거나 필요하다면 별도 처리 가능.
+    die('유효하지 않은 접근입니다.');
 }
 
-// 배송 예정일 계산
+// 배송 예정일 계산 (direct_preview인 경우 페이지 표시용)
 $oneWeekLater = new DateTime('+1 week');
 $weekMap = [
     'Sun' => '일',
@@ -79,92 +144,6 @@ $available_points = (int)($pointStmt->fetchColumn() ?? 0);
 // 포인트 사용 한도 (7%)
 $max_point_use = floor($total * 0.07);
 $max_usable_points = min($available_points, $max_point_use);
-
-// 최종 결제 처리 로직
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'buy') {
-    // 여기서는 최종 결제 처리
-    $used_points = isset($_POST['use_points']) ? (int)$_POST['use_points'] : 0;
-    if ($used_points > $max_usable_points) {
-        $used_points = $max_usable_points;
-    }
-
-    $final_price = $total - $used_points;
-    if ($final_price < 0) $final_price = 0;
-
-    // 주문 생성 및 재고 반영
-    // 바로 구매하기인 경우 direct_product 하나만 주문
-    // 장바구니 구매인 경우 cart_items 전체 주문
-
-    $pdo->beginTransaction();
-    try {
-        if ($is_direct_buy) {
-            $ci = $direct_product;
-            $ord = $pdo->prepare("INSERT INTO orders (user_id, product_name, product_image, price, product_id, status) VALUES (:user_id, :pn, :pi, :pr, :pid, 'pending')");
-            $ord->execute([
-                'user_id' => $user_id,
-                'pn' => $ci['product_name'],
-                'pi' => $ci['product_image'],
-                'pr' => $ci['price'] * $ci['quantity'],
-                'pid' => $ci['id']
-            ]);
-
-            // 재고 감소 및 판매량 증가
-            $updPrd = $pdo->prepare("UPDATE products SET sold_count = sold_count + :qty, stock = stock - :qty WHERE id=:id AND stock >= :qty");
-            $updPrd->execute(['qty' => $ci['quantity'], 'id' => $ci['id']]);
-
-            // 바로 구매 시 favorites 제거 로직 (요청사항 없음, 필요시 추가)
-        } else {
-            // 장바구니 구매 로직
-            $product_ids = [];
-            foreach ($cart_items as $ci) {
-                $ord = $pdo->prepare("INSERT INTO orders (user_id, product_name, product_image, price, product_id, status) VALUES (:user_id, :pn, :pi, :pr, :pid, 'pending')");
-                $ord->execute([
-                    'user_id' => $user_id,
-                    'pn' => $ci['product_name'],
-                    'pi' => $ci['product_image'],
-                    'pr' => $ci['price'] * $ci['quantity'],
-                    'pid' => $ci['product_id']
-                ]);
-
-                // 재고 감소 및 판매량 증가
-                $updPrd = $pdo->prepare("UPDATE products SET sold_count = sold_count + :qty, stock = stock - :qty WHERE id=:id AND stock >= :qty");
-                $updPrd->execute(['qty' => $ci['quantity'], 'id' => $ci['product_id']]);
-
-                $product_ids[] = $ci['product_id'];
-            }
-
-            // 장바구니 비우기
-            $delC = $pdo->prepare("DELETE FROM cart WHERE user_id=:uid");
-            $delC->execute(['uid' => $user_id]);
-
-            // 찜하기 해제
-            if (!empty($product_ids)) {
-                $in_placeholders = implode(',', array_fill(0, count($product_ids), '?'));
-                $params = $product_ids;
-                $params[] = $user_id;
-
-                $delF = $pdo->prepare("DELETE FROM favorites WHERE product_id IN ($in_placeholders) AND user_id = ?");
-                $delF->execute(array_merge($product_ids, [$user_id]));
-            }
-        }
-
-        // 포인트 차감 처리
-        if ($used_points > 0) {
-            $new_balance = $available_points - $used_points;
-            $desc = "상품 구매 포인트 사용";
-            $insPoint = $pdo->prepare("INSERT INTO points (user_id, description, points, balance) VALUES (:uid, :desc, :pts, :bal)");
-            $insPoint->execute(['uid' => $user_id, 'desc' => $desc, 'pts' => -$used_points, 'bal' => $new_balance]);
-        }
-
-        $pdo->commit();
-        header("Location: mypage.php?message=구매가 완료되었습니다.");
-        exit;
-    } catch (PDOException $e) {
-        $pdo->rollBack();
-        echo "<script>alert('결제 처리 중 오류가 발생했습니다: " . addslashes($e->getMessage()) . "');history.back();</script>";
-        exit();
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -174,6 +153,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'buy') {
     <title>결제 페이지</title>
     <link rel="stylesheet" href="./style.css">
     <style>
+        :root {
+            --main: #2ef3e1;
+            --main-hover: #26d4c3;
+            --white: #ffffff;
+            --black: #000000;
+            --gray: #808080;
+            --light-gray: #d0d0d0;
+            --light-black: #202020;
+        }
+
         body {
             background-color: #000;
             color: #fff;
@@ -333,9 +322,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'buy') {
             <textarea rows="3" placeholder="예: 문 앞에 놔주세요, 배송 전에 연락 주세요 등"></textarea>
         </div>
 
-        <!-- 주문 상품 목록 -->
-        <div class="orders_section">
-            <?php if ($is_direct_buy): ?>
+        <!-- 주문 상품 목록 (direct_preview 상태) -->
+        <?php if ($is_direct_buy && $action === 'direct_preview'): ?>
+            <div class="orders_section">
                 <h2 class="section_title">주문 상품 1개</h2>
                 <p style="margin-bottom:16px;"><?= $estimated_shipping_date ?></p>
                 <table>
@@ -365,81 +354,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'buy') {
                         </tr>
                     </tbody>
                 </table>
-            <?php else: ?>
-                <h2 class="section_title">주문 상품 <?= count($cart_items) ?>개</h2>
-                <p style="margin-bottom:16px;"><?= $estimated_shipping_date ?></p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>상품명</th>
-                            <th>이미지</th>
-                            <th>가격</th>
-                            <th>수량</th>
-                            <th>합계</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($cart_items) === 0): ?>
-                            <tr>
-                                <td colspan="5">장바구니에 상품이 없습니다.</td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($cart_items as $item):
-                                $subtotal = $item['price'] * $item['quantity'];
-                            ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($item['product_name']); ?></td>
-                                    <td>
-                                        <?php if ($item['product_image']): ?>
-                                            <img src="<?= htmlspecialchars($item['product_image']); ?>" width="50">
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= number_format($item['price']); ?>원</td>
-                                    <td><?= $item['quantity']; ?></td>
-                                    <td><?= number_format($subtotal); ?>원</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
+            </div>
 
-        <!-- 적립금 사용 -->
-        <div class="points_section">
-            <h2 class="section_title">보유 적립금 사용</h2>
-            <div class="points_info">
-                <p>사용 한도(7%): <?= number_format($max_point_use) ?>원</p>
-                <p>보유 포인트: <?= number_format($available_points) ?>원</p>
-                <form method="post" style="margin-top:8px;">
-                    <!-- 최종 결제 시 buy 액션 -->
-                    <input type="hidden" name="action" value="buy">
-                    <?php if ($is_direct_buy): ?>
-                        <!-- 바로 구매한 상품의 정보도 다시 넘겨서 결제 시 알 수 있게 함 -->
+            <!-- 적립금 사용 및 결제하기 버튼 -->
+            <div class="points_section">
+                <h2 class="section_title">보유 적립금 사용</h2>
+                <div class="points_info">
+                    <p>사용 한도(7%): <?= number_format($max_point_use) ?>원</p>
+                    <p>보유 포인트: <?= number_format($available_points) ?>원</p>
+                    <form method="post" style="margin-top:8px;">
+                        <input type="hidden" name="action" value="buy_direct">
                         <input type="hidden" name="product_id" value="<?= htmlspecialchars($direct_product['id']) ?>">
                         <input type="hidden" name="quantity" value="<?= htmlspecialchars($direct_product['quantity']) ?>">
                         <input type="hidden" name="direct_buy" value="1">
-                    <?php endif; ?>
 
-                    <input type="number" name="use_points" min="0" max="<?= $max_usable_points ?>" value="0" style="width:100px;">
-                    <p style="font-size:12px; color:#ccc; margin-top:8px;">최대 사용 가능 포인트: <?= number_format($max_usable_points) ?>원</p>
+                        <input type="number" name="use_points" min="0" max="<?= $max_usable_points ?>" value="0" style="width:100px;">
+                        <p style="font-size:12px; color:#ccc; margin-top:8px;">최대 사용 가능 포인트: <?= number_format($max_usable_points) ?>원</p>
 
-                    <div class="checkbox_area">
-                        <p><input type="checkbox" checked> 주문 내용을 확인했으며 결제에 동의합니다.</p>
-                        <p><input type="checkbox" checked> 개인정보 제3자 제공동의</p>
-                        <p><input type="checkbox" checked> 전자결제대행 이용 동의</p>
-                    </div>
+                        <div class="checkbox_area">
+                            <p><input type="checkbox" checked> 주문 내용을 확인했으며 결제에 동의합니다.</p>
+                            <p><input type="checkbox" checked> 개인정보 제3자 제공동의</p>
+                            <p><input type="checkbox" checked> 전자결제대행 이용 동의</p>
+                        </div>
 
-                    <div class="bottom_fixed_bar">
-                        <?php
-                        $final_price = $total; // 결제 전 표시되는 금액
-                        ?>
-                        <div class="price_info"><?= number_format($final_price) ?>원 결제하기</div>
-                        <button type="submit" class="action-btn">결제하기</button>
-                    </div>
-                </form>
+                        <div class="bottom_fixed_bar">
+                            <div class="price_info"><?= number_format($total) ?>원 결제하기</div>
+                            <button type="submit" class="action-btn">결제하기</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        <?php endif; ?>
 
     </div>
     <?php include("./Components/FooterComponents.php"); ?>

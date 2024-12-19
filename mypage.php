@@ -395,6 +395,7 @@ $posts = $postQuery->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <!-- 주문 내역 -->
+            <a href="review_write.php" class="edit_profile_btn">리뷰 작성하기</a>
             <div class="orders_section">
                 <h2 class="section_title"><a href="orders.php">주문 내역</a></h2>
                 <?php if (count($orders) === 0): ?>

@@ -42,6 +42,23 @@ foreach ($cart_items as $item) {
     <title>장바구니</title>
     <link rel="stylesheet" href="./style.css">
     <style>
+        :root {
+            --main: #2ef3e1;
+            --main-hover: #26d4c3;
+            --white: #ffffff;
+            --black: #000000;
+            --gray: #808080;
+            --light-gray: #d0d0d0;
+            --light-black: #202020;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            margin: 0;
+            font-family: sans-serif;
+        }
+
         .container {
             max-width: 1200px;
             margin: auto;
@@ -50,16 +67,22 @@ foreach ($cart_items as $item) {
             height: 100%;
         }
 
+        h1 {
+            margin-bottom: 24px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             color: #fff;
+            margin-bottom: 24px;
         }
 
         th,
         td {
             padding: 8px;
             border-bottom: 1px solid #555;
+            text-align: center;
         }
 
         th {
@@ -69,6 +92,8 @@ foreach ($cart_items as $item) {
         .total_box {
             text-align: right;
             margin-top: 16px;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
 
         .action-btn {
@@ -78,14 +103,12 @@ foreach ($cart_items as $item) {
             border-radius: 4px;
             text-decoration: none;
             font-weight: bold;
+            border: none;
+            cursor: pointer;
         }
 
         .action-btn:hover {
             background: var(--main-hover);
-        }
-
-        h1 {
-            margin-bottom: 24px;
         }
 
         .section-title {
@@ -95,6 +118,13 @@ foreach ($cart_items as $item) {
             border-bottom: 1px solid #555;
             padding-bottom: 8px;
         }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
     </style>
 </head>
 
@@ -102,13 +132,15 @@ foreach ($cart_items as $item) {
     <?php include("./Components/HeaderComponents.php"); ?>
     <div class="container">
         <h1>장바구니</h1>
-        <!-- 장바구니 상품 목록 -->
+
         <?php if (count($cart_items) === 0): ?>
             <p>장바구니에 상품이 없습니다.</p>
         <?php else: ?>
-            <form action="update_cart.php" method="post">
+            <!-- 하나의 테이블에 수량 변경, 삭제 체크박스, 구매 선택 체크박스를 모두 포함 -->
+            <form id="cartForm" method="post">
                 <table>
                     <tr>
+                        <th>구매선택</th>
                         <th>상품명</th>
                         <th>이미지</th>
                         <th>가격</th>
@@ -120,6 +152,7 @@ foreach ($cart_items as $item) {
                         $subtotal = $item['price'] * $item['quantity'];
                     ?>
                         <tr>
+                            <td><input type="checkbox" name="cart_ids[]" value="<?php echo $item['id']; ?>"></td>
                             <td><?php echo htmlspecialchars($item['product_name']); ?></td>
                             <td><img src="<?php echo htmlspecialchars($item['product_image']); ?>" alt="" width="50"></td>
                             <td><?php echo number_format($item['price']); ?>원</td>
@@ -134,9 +167,12 @@ foreach ($cart_items as $item) {
                 <div class="total_box">
                     총합: <?php echo number_format($total); ?>원
                 </div>
-                <div style="margin-top:16px; display:flex; gap:10px; justify-content:flex-end;">
-                    <button type="submit" class="action-btn">변경사항 적용</button>
-                    <a href="checkout.php" class="action-btn">구매하기</a>
+
+                <div class="btn-group">
+                    <!-- 변경사항 적용 버튼: update_cart.php로 이동 -->
+                    <button type="submit" class="action-btn" onclick="document.getElementById('cartForm').action='update_cart.php';">변경사항 적용</button>
+                    <!-- 선택 상품 구매하기 버튼: checkout.php로 이동, action=cart_buy를 추가 -->
+                    <button type="submit" class="action-btn" onclick="goToCheckout()">선택 상품 구매하기</button>
                 </div>
             </form>
         <?php endif; ?>
@@ -164,15 +200,26 @@ foreach ($cart_items as $item) {
                     <?php endforeach; ?>
                 </table>
                 <div style="margin-top:16px; text-align:right;">
-                    <!-- 여기서는 예시로 product_id=123 상품을 장바구니에 담는 폼이 있는데 실제 로직에 맞게 수정 필요 -->
-                    <input type="hidden" name="product_id" value="123">
-                    <input type="number" name="quantity" value="1" min="1">
+                    <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="action-btn">장바구니에 담기</button>
                 </div>
             </form>
         <?php endif; ?>
     </div>
     <?php include("./Components/FooterComponents.php"); ?>
+
+    <script>
+        function goToCheckout() {
+            const form = document.getElementById('cartForm');
+            form.action = 'checkout.php';
+            // checkout 시 action 값을 cart_buy로 넘겨주기 위해 hidden input 추가
+            const hiddenAction = document.createElement('input');
+            hiddenAction.type = 'hidden';
+            hiddenAction.name = 'action';
+            hiddenAction.value = 'cart_buy';
+            form.appendChild(hiddenAction);
+        }
+    </script>
 </body>
 
 </html>

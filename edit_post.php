@@ -10,6 +10,8 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
+
 // 게시물 ID 받기
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -31,11 +33,94 @@ if ($id > 0) {
             echo "권한이 없습니다.";
             exit();
         }
+
+        // post_type과 product_id 추출
+        $post_type = $post['post_type'];
+        $post_product_id = (int)$post['product_id'];
+
+        // 유저 role 확인
+        $user_stmt = $pdo->prepare("SELECT role FROM users WHERE id = :id");
+        $user_stmt->execute(['id' => $user_id]);
+        $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+        $user_role = $user ? $user['role'] : 'user';
+
+        if ($post_type === 'review') {
+            // 리뷰 수정 시 구매한 상품만 표시
+            $purchase_check = $pdo->prepare("
+                SELECT DISTINCT p.id, p.product_name 
+                FROM orders o 
+                JOIN products p ON o.product_id = p.id 
+                WHERE o.user_id = :uid 
+                AND o.status IN ('pending','processing','shipped','delivered')
+                ORDER BY p.product_name ASC
+            ");
+            $purchase_check->execute(['uid' => $user_id]);
+            $purchased_products = $purchase_check->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($purchased_products) === 0) {
+                echo "<script>alert('구매한 상품이 없습니다. 이 리뷰를 수정할 수 없습니다.');history.back();</script>";
+                exit();
+            }
+
+            // 수정하는 게시물의 product_id가 현재 구매한 상품 리스트에 있는지 체크
+            $valid_product = false;
+            foreach ($purchased_products as $pprd) {
+                if ($pprd['id'] === $post_product_id) {
+                    $valid_product = true;
+                    break;
+                }
+            }
+
+            if (!$valid_product) {
+                echo "<script>alert('이 리뷰에 해당하는 상품은 더 이상 구매 기록이 없습니다. 수정 불가.');history.back();</script>";
+                exit();
+            }
+        } elseif ($post_type === 'qna') {
+            // Q&A는 누구나 작성, 모든 상품 표시
+            $products_stmt = $pdo->query("SELECT id, product_name FROM products ORDER BY product_name ASC");
+            $all_products = $products_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 게시물의 product_id가 실제 상품 목록에 있는지 체크 (안해도 되나 안정성 위해)
+            $valid_product = false;
+            foreach ($all_products as $prd) {
+                if ((int)$prd['id'] === $post_product_id) {
+                    $valid_product = true;
+                    break;
+                }
+            }
+            if (!$valid_product) {
+                echo "<script>alert('해당 Q&A 게시물의 상품을 찾을 수 없습니다.');history.back();</script>";
+                exit();
+            }
+        } elseif ($post_type === 'notice') {
+            // notice는 admin만
+            if ($user_role !== 'admin') {
+                echo "권한이 없습니다.";
+                exit();
+            }
+            // notice도 모든 상품 표시(필요시)
+            $products_stmt = $pdo->query("SELECT id, product_name FROM products ORDER BY product_name ASC");
+            $all_products = $products_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // product_id 유효성 체크
+            $valid_product = false;
+            foreach ($all_products as $prd) {
+                if ((int)$prd['id'] === $post_product_id) {
+                    $valid_product = true;
+                    break;
+                }
+            }
+            if (!$valid_product) {
+                echo "<script>alert('해당 공지사항 게시물의 상품을 찾을 수 없습니다.');history.back();</script>";
+                exit();
+            }
+        } else {
+            // 유효하지 않은 post_type
+            echo "<script>alert('유효한 게시물 유형이 아닙니다.');history.back();</script>";
+            exit();
+        }
     } catch (PDOException $e) {
-        // 배포 시에는 일반적인 에러 메시지로 대체
         echo "게시물 조회 중 오류가 발생했습니다.";
-        // 개발 환경에서는 아래 줄을 활성화하여 에러 메시지 확인 가능
-        // echo "게시물 조회 중 오류가 발생했습니다: " . htmlspecialchars($e->getMessage());
         exit();
     }
 } else {
@@ -120,6 +205,7 @@ if ($id > 0) {
             font-size: 18px;
             transition: background-color 0.3s, color 0.3s;
             margin-top: 10px;
+            width: 100%;
         }
 
         .edit_form button:hover {
@@ -130,20 +216,6 @@ if ($id > 0) {
         .edit_form button:active {
             background-color: var(--main-active);
             color: var(--black-active);
-        }
-
-
-        .write_form textarea {
-            margin-bottom: 20px;
-            padding: 12px;
-            border: 1px solid var(--gray);
-            border-radius: 6px;
-            background-color: var(--black);
-            color: var(--white);
-            font-size: 16px;
-            resize: vertical;
-            min-height: 500px;
-            /* 변경된 부분 */
         }
 
         .ck-editor__editable {
@@ -164,10 +236,42 @@ if ($id > 0) {
                 <label for="post_type">카테고리</label>
                 <select id="post_type" name="post_type" required>
                     <option value="">선택하세요</option>
-                    <option value="notice" <?= ($post['post_type'] === 'notice') ? 'selected' : '' ?>>공지사항</option>
-                    <option value="review" <?= ($post['post_type'] === 'review') ? 'selected' : '' ?>>리뷰</option>
-                    <option value="qna" <?= ($post['post_type'] === 'qna') ? 'selected' : '' ?>>Q & A</option>
+                    <?php if ($user_role === 'admin'): ?>
+                        <option value="notice" <?= ($post_type === 'notice') ? 'selected' : '' ?>>공지사항</option>
+                    <?php endif; ?>
+                    <option value="review" <?= ($post_type === 'review') ? 'selected' : '' ?>>리뷰</option>
+                    <option value="qna" <?= ($post_type === 'qna') ? 'selected' : '' ?>>Q & A</option>
                 </select>
+
+                <?php
+                // product_id select box
+                echo '<label for="product_id">상품 선택</label>';
+                if ($post_type === 'review') {
+                    // 리뷰: 구매한 상품(purchased_products)에서 product_id 선택
+                    echo '<select id="product_id" name="product_id" required>';
+                    echo '<option value="">상품 선택</option>';
+                    foreach ($purchased_products as $pprd) {
+                        echo '<option value="' . $pprd['id'] . '"' . ($pprd['id'] === $post_product_id ? 'selected' : '') . '>' . htmlspecialchars($pprd['product_name']) . '</option>';
+                    }
+                    echo '</select>';
+                } elseif ($post_type === 'qna') {
+                    // QnA: all_products에서 product_id 선택
+                    echo '<select id="product_id" name="product_id" required>';
+                    echo '<option value="">상품 선택</option>';
+                    foreach ($all_products as $prd) {
+                        echo '<option value="' . $prd['id'] . '"' . ($prd['id'] === $post_product_id ? 'selected' : '') . '>' . htmlspecialchars($prd['product_name']) . '</option>';
+                    }
+                    echo '</select>';
+                } elseif ($post_type === 'notice') {
+                    // notice: all_products에서 product_id 선택 (admin)
+                    echo '<select id="product_id" name="product_id" required>';
+                    echo '<option value="">상품 선택</option>';
+                    foreach ($all_products as $prd) {
+                        echo '<option value="' . $prd['id'] . '"' . ($prd['id'] === $post_product_id ? 'selected' : '') . '>' . htmlspecialchars($prd['product_name']) . '</option>';
+                    }
+                    echo '</select>';
+                }
+                ?>
 
                 <label for="title">제목</label>
                 <input type="text" id="title" name="title" required placeholder="제목을 입력하세요" value="<?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?>">
@@ -201,7 +305,7 @@ if ($id > 0) {
                         'mergeTableCells'
                     ]
                 },
-                licenseKey: '', // 무료 사용 시 비워두세요.
+                licenseKey: '',
             })
             .catch(error => {
                 console.error(error);

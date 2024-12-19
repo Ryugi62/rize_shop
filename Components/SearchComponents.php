@@ -1,7 +1,15 @@
 <div class="search_component">
-    <input type="text" class="search_input" onkeydown="if (event.key === 'Enter') searchProduct()">
-    <button class="search_button" onclick="searchProduct()">검색</button>
+    <form action="product.php" method="get" style="display:flex;">
+        <?php
+        $saved_search = isset($_GET['search']) ? htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') : '';
+        ?>
+        <input type="text" name="search" class="search_input" placeholder="상품명 검색" style="width:200px; height:40px;" value="<?php echo $saved_search; ?>">
+        <button type="submit" class="search_button" style="width:80px; height:40px; margin-left:8px;">검색</button>
+    </form>
 </div>
+
+
+
 
 <script>
     function searchProduct() {
